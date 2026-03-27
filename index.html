@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hockey Stars</title>
+    <style>
+        * { box-sizing: border-box; touch-action: none; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #2c3e50; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        
+        .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; background: #ecf0f1; flex-direction: column; align-items: center; justify-content: center; }
+        .active { display: flex; }
+
+        /* Top Bar Stats */
+        .top-bar { position: absolute; top: 0; width: 100%; padding: 15px; display: flex; justify-content: space-around; background: #34495e; color: white; font-weight: bold; border-bottom-left-radius: 15px; border-bottom-right-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 10;}
+        .stat-item { display: flex; align-items: center; gap: 5px; }
+        .color-elo { color: #f1c40f; }
+        .color-coins { color: #f39c12; }
+        .color-gems { color: #9b59b6; }
+
+        /* Buttons */
+        .btn { padding: 15px 30px; margin: 10px; border: none; border-radius: 25px; font-size: 18px; font-weight: bold; color: white; text-transform: uppercase; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.2); transition: transform 0.1s; }
+        .btn:active { transform: translateY(4px); box-shadow: none; }
+        
+        .btn-play { background: #f1c40f; color: #2c3e50; font-size: 28px; padding: 20px 60px; margin-top: auto; margin-bottom: 20px;}
+        .btn-mode { background: #3498db; position: absolute; bottom: 100px; right: 20px; font-size: 16px; border-radius: 15px; padding: 10px 20px;}
+        .btn-shop { background: #9b59b6; position: absolute; bottom: 100px; left: 20px; font-size: 16px; border-radius: 15px; padding: 10px 20px;}
+        .btn-cancel { background: #e74c3c; }
+        .btn-back { background: #95a5a6; position: absolute; top: 80px; left: 20px; padding: 10px 20px; font-size: 14px;}
+
+        /* Game UI */
+        #canvas-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #bdc3c7;}
+        canvas { background: #e0f7fa; border: 4px solid #2980b9; border-radius: 20px; box-shadow: 0 0 20px rgba(0,0,0,0.3); max-width: 100%; max-height: 100%;}
+        #score-board { position: absolute; top: 20px; font-size: 32px; font-weight: bold; color: #2c3e50; text-shadow: 2px 2px white; pointer-events: none;}
+
+        .title { font-size: 48px; color: #2c3e50; margin-bottom: auto; margin-top: 100px; font-weight: 900;}
+    </style>
+</head>
+<body>
+
+    <div id="screen-menu" class="screen active">
+        <div class="top-bar">
+            <div class="stat-item"><span class="color-elo">⭐ ELO:</span> <span id="ui-elo">0</span></div>
+            <div class="stat-item"><span class="color-coins">🪙</span> <span id="ui-coins">0</span></div>
+            <div class="stat-item"><span class="color-gems">💎</span> <span id="ui-gems">0</span></div>
+        </div>
+        <div class="title">HOCKEY</div>
+        <button class="btn btn-shop" onclick="showScreen('screen-shop')">SHOP</button>
+        <button class="btn btn-mode" onclick="showScreen('screen-modes')">MODE: <span id="current-mode-text">ONLINE</span></button>
+        <button class="btn btn-play" onclick="startMatchmaking()">PLAY</button>
+    </div>
+
+    <div id="screen-modes" class="screen">
+        <button class="btn btn-back" onclick="showScreen('screen-menu')">BACK</button>
+        <h2>SELECT MODE</h2>
+        <button class="btn" style="background:#e74c3c" onclick="setMode('ONLINE')">ONLINE (3 Rounds)</button>
+        <button class="btn" style="background:#3498db" onclick="setMode('BOTS')">BOTS (3 Rounds)</button>
+        <button class="btn" style="background:#2ecc71" onclick="setMode('TRAINING')">TRAINING (5 Rounds)</button>
+    </div>
+
+    <div id="screen-shop" class="screen">
+        <button class="btn btn-back" onclick="showScreen('screen-menu')">BACK</button>
+        <h2>STORE</h2>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <p>Coins: <span id="shop-coins" class="color-coins">0</span> | Gems: <span id="shop-gems" class="color-gems">0</span></p>
+        </div>
+        <button class="btn" style="background:#8e44ad" onclick="buyCase()">BUY CASE (10 💎)</button>
+        <button class="btn" style="background:#f39c12" onclick="buySkin()">RANDOM SKIN (3000 🪙)</button>
+    </div>
+
+    <div id="screen-matchmaking" class="screen">
+        <h2 id="match-status">SEARCHING...</h2>
+        <p>Estimated time: 3s</p>
+        <button class="btn btn-cancel" onclick="cancelMatchmaking()">CANCEL</button>
+    </div>
+
+    <div id="screen-game" class="screen">
+        <div id="score-board">0 - 0</div>
+        <div id="canvas-container">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+    </div>
+
+<script>
+    // --- ПЕРЕМЕННЫЕ ИГРОКА (Сохраняются в LocalStorage) ---
+    let player = {
+        elo: parseInt(localStorage.getItem('elo')) || 0,
+        coins: parseInt(localStorage.getItem('coins')) || 0,
+        gems: parseInt(localStorage.getItem('gems')) || 0,
+        mode: 'ONLINE',
+        maxRounds: 3
+    };
+
+    function updateUI() {
+        document.getElementById('ui-elo').innerText = player.elo;
+        document.getElementById('ui-coins').innerText = player.coins;
+        document.getElementById('ui-gems').innerText = player.gems;
+        document.getElementById('shop-coins').innerText = player.coins;
+        document.getElementById('shop-gems').innerText = player.gems;
+        
+        localStorage.setItem('elo', player.elo);
+        localStorage.setItem('coins', player.coins);
+        localStorage.setItem('gems', player.gems);
+    }
+    updateUI();
+
+    // --- НАВИГАЦИЯ ---
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    function setMode(mode) {
+        player.mode = mode;
+        player.maxRounds = mode === 'TRAINING' ? 5 : 3;
+        document.getElementById('current-mode-text').innerText = mode;
+        showScreen('screen-menu');
+    }
+
+    let matchTimer;
+    function startMatchmaking() {
+        showScreen('screen-matchmaking');
+        // Симуляция поиска (для онлайна можно добавить реальную логику)
+        let delay = player.mode === 'ONLINE' ? 3000 : 1000;
+        document.getElementById('match-status').innerText = player.mode === 'ONLINE' ? "SEARCHING FOR PLAYERS..." : "LOADING BOTS...";
+        
+        matchTimer = setTimeout(() => {
+            startGame();
+        }, delay);
+    }
+
+    function cancelMatchmaking() {
+        clearTimeout(matchTimer);
+        showScreen('screen-menu');
+    }
+
+    // --- ЭКОНОМИКА (МАГАЗИН) ---
+    function buyCase() {
+        if(player.gems >= 10) {
+            player.gems -= 10;
+            let wonCoins = Math.floor(Math.random() * 400) + 100; // От 100 до 500 монет
+            player.coins += wonCoins;
+            alert(`Case opened! You got ${wonCoins} 🪙 coins!`);
+            updateUI();
+        } else {
+            alert("Not enough Gems! Win matches to get them.");
+        }
+    }
+
+    function buySkin() {
+        if(player.coins >= 3000) {
+            player.coins -= 3000;
+            alert("Skin purchased successfully!");
+            updateUI();
+        } else {
+            alert("Not enough Coins!");
+        }
+    }
+
+    // --- ЛОГИКА ELO ---
+    function calculateElo(goalsFor, goalsAgainst) {
+        let e = player.elo;
+        let gainedElo = 0;
+        let isPerfect = (goalsAgainst === 0);
+        let isClose = (goalsFor - goalsAgainst <= 1);
+
+        if (e < 1000) {
+            gainedElo = isPerfect ? 30 : (isClose ? 10 : 20);
+        } else if (e < 1500) {
+            gainedElo = isPerfect ? 20 : (isClose ? 5 : 12);
+        } else if (e < 3000) {
+            gainedElo = isPerfect ? 15 : (isClose ? 5 : 10);
+        } else if (e < 10000) {
+            gainedElo = isPerfect ? 10 : (isClose ? 5 : 7);
+        } else {
+            gainedElo = 5;
+        }
+        return gainedElo;
+    }
+
+    function matchOver(playerWon, pGoals, eGoals) {
+        gameRunning = false;
+        if(playerWon) {
+            let eloGained = calculateElo(pGoals, eGoals);
+            player.elo += eloGained;
+            player.coins += 100;
+            player.gems += 1;
+            alert(`VICTORY!\nScore: ${pGoals} - ${eGoals}\n+${eloGained} ELO\n+100 Coins\n+1 Gem`);
+        } else {
+            alert(`DEFEAT!\nScore: ${pGoals} - ${eGoals}\nBetter luck next time!`);
+        }
+        updateUI();
+        showScreen('screen-menu');
+    }
+
+    // --- ИГРОВОЙ ДВИЖОК (ХОККЕЙ) ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let gameRunning = false;
+    let scores = { player: 0, enemy: 0 };
+
+    // Размеры и объекты
+    let cw, ch;
+    let puck = { x: 0, y: 0, vx: 0, vy: 0, r: 15, mass: 1 };
+    let playerPaddle = { x: 0, y: 0, r: 30, color: '#e74c3c' }; // Red (Bottom)
+    let enemyPaddle = { x: 0, y: 0, r: 30, color: '#2980b9' };  // Blue (Top)
+
+    function resizeCanvas() {
+        cw = window.innerWidth * 0.9;
+        ch = window.innerHeight * 0.8;
+        if(cw > 500) cw = 500; // Ограничение для ПК
+        canvas.width = cw;
+        canvas.height = ch;
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function resetPositions() {
+        puck.x = cw / 2; puck.y = ch / 2;
+        puck.vx = 0; puck.vy = 0;
+        playerPaddle.x = cw / 2; playerPaddle.y = ch - 60;
+        enemyPaddle.x = cw / 2; enemyPaddle.y = 60;
+    }
+
+    function startGame() {
+        resizeCanvas();
+        resetPositions();
+        scores = { player: 0, enemy: 0 };
+        document.getElementById('score-board').innerText = `0 - 0`;
+        showScreen('screen-game');
+        gameRunning = true;
+        gameLoop();
+    }
+
+    // Управление игроком (Сенсор)
+    canvas.addEventListener('touchmove', (e) => {
+        if(!gameRunning) return;
+        e.preventDefault();
+        let rect = canvas.getBoundingClientRect();
+        let touchX = e.touches[0].clientX - rect.left;
+        let touchY = e.touches[0].clientY - rect.top;
+
+        // Ограничиваем движение игрока его половиной поля (нижней)
+        playerPaddle.x = Math.max(playerPaddle.r, Math.min(cw - playerPaddle.r, touchX));
+        playerPaddle.y = Math.max(ch/2 + playerPaddle.r, Math.min(ch - playerPaddle.r, touchY));
+    }, {passive: false});
+
+    function resolveCollision(paddle, p) {
+        let dx = p.x - paddle.x;
+        let dy = p.y - paddle.y;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        
+        if (dist < paddle.r + p.r) {
+            // Выталкиваем шайбу
+            let overlap = (paddle.r + p.r) - dist;
+            let nx = dx / dist;
+            let ny = dy / dist;
+            p.x += nx * overlap;
+            p.y += ny * overlap;
+            
+            // Простейший импульс
+            p.vx = nx * 10;
+            p.vy = ny * 10;
+        }
+    }
+
+    function update() {
+        // Движение шайбы
+        puck.x += puck.vx;
+        puck.y += puck.vy;
+        
+        // Трение (замедление шайбы)
+        puck.vx *= 0.98;
+        puck.vy *= 0.98;
+
+        // Столкновение со стенами (лево/право)
+        if (puck.x - puck.r < 0) { puck.x = puck.r; puck.vx *= -0.8; }
+        if (puck.x + puck.r > cw) { puck.x = cw - puck.r; puck.vx *= -0.8; }
+
+        // Логика Ворот (по центру сверху и снизу, ширина 100px)
+        let goalWidth = 120;
+        let isGoal = false;
+
+        if (puck.y - puck.r < 0) {
+            if(puck.x > cw/2 - goalWidth/2 && puck.x < cw/2 + goalWidth/2) {
+                scores.player++; isGoal = true;
+            } else { puck.y = puck.r; puck.vy *= -0.8; }
+        }
+        if (puck.y + puck.r > ch) {
+            if(puck.x > cw/2 - goalWidth/2 && puck.x < cw/2 + goalWidth/2) {
+                scores.enemy++; isGoal = true;
+            } else { puck.y = ch - puck.r; puck.vy *= -0.8; }
+        }
+
+        if(isGoal) {
+            document.getElementById('score-board').innerText = `${scores.enemy} - ${scores.player}`;
+            if(scores.player >= player.maxRounds) { matchOver(true, scores.player, scores.enemy); return; }
+            if(scores.enemy >= player.maxRounds) { matchOver(false, scores.player, scores.enemy); return; }
+            resetPositions();
+        }
+
+        // Логика Бота (двигается за шайбой на своей половине)
+        if(puck.y < ch/2) {
+            enemyPaddle.x += (puck.x - enemyPaddle.x) * 0.1;
+            enemyPaddle.y += (puck.y - 30 - enemyPaddle.y) * 0.1;
+        } else {
+            enemyPaddle.x += (cw/2 - enemyPaddle.x) * 0.05;
+            enemyPaddle.y += (60 - enemyPaddle.y) * 0.05;
+        }
+        // Ограничения бота
+        enemyPaddle.x = Math.max(enemyPaddle.r, Math.min(cw - enemyPaddle.r, enemyPaddle.x));
+        enemyPaddle.y = Math.max(enemyPaddle.r, Math.min(ch/2 - enemyPaddle.r, enemyPaddle.y));
+
+        // Проверка столкновений
+        resolveCollision(playerPaddle, puck);
+        resolveCollision(enemyPaddle, puck);
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, cw, ch);
+        
+        // Линии поля (красная центральная линия)
+        ctx.beginPath(); ctx.moveTo(0, ch/2); ctx.lineTo(cw, ch/2);
+        ctx.strokeStyle = '#ffbaba'; ctx.lineWidth = 4; ctx.stroke();
+        
+        // Центральный круг
+        ctx.beginPath(); ctx.arc(cw/2, ch/2, 50, 0, Math.PI*2); ctx.stroke();
+
+        // Ворота (сверху и снизу)
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(cw/2 - 60, 0, 120, 10);
+        ctx.fillRect(cw/2 - 60, ch-10, 120, 10);
+
+        // Враг (Синий)
+        ctx.beginPath(); ctx.arc(enemyPaddle.x, enemyPaddle.y, enemyPaddle.r, 0, Math.PI*2);
+        ctx.fillStyle = enemyPaddle.color; ctx.fill(); ctx.stroke();
+
+        // Игрок (Красный)
+        ctx.beginPath(); ctx.arc(playerPaddle.x, playerPaddle.y, playerPaddle.r, 0, Math.PI*2);
+        ctx.fillStyle = playerPaddle.color; ctx.fill(); ctx.stroke();
+
+        // Шайба
+        ctx.beginPath(); ctx.arc(puck.x, puck.y, puck.r, 0, Math.PI*2);
+        ctx.fillStyle = '#222'; ctx.fill();
+    }
+
+    function gameLoop() {
+        if(!gameRunning) return;
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+</script>
+</body>
+</html>
