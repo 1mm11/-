@@ -3,615 +3,388 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dark Hockey Stars</title>
+    <title>Dark Hockey Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #0d1117; font-family: 'Oswald', sans-serif; color: white; }
         
-        /* Общие стили экранов (Темная тема) */
-        .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 80px; background: radial-gradient(circle, #1a2333 0%, #0d1117 100%);}
-        .screen.active { display: flex; animation: fadeIn 0.3s ease-out; }
-
+        .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; flex-direction: column; align-items: center; background: radial-gradient(circle, #1a2333 0%, #0d1117 100%); z-index: 10;}
+        .screen.active { display: flex; animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* Верхняя панель статистики (стиль BS) */
-        .top-bar { position: absolute; top: 0; width: 100%; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(13, 17, 23, 0.9); border-bottom: 2px solid #30363d; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        .stat-group { display: flex; gap: 15px; }
-        .stat-item { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 18px; text-shadow: 1px 1px 2px black; }
-        .icon-elo { color: #f1c40f; font-size: 20px;}
-        .icon-coins { color: #f39c12; }
-        .icon-gems { color: #9b59b6; }
+        /* Панель ресурсов */
+        .top-bar { position: absolute; top: 0; width: 100%; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.6); border-bottom: 2px solid #30363d; z-index: 100; }
+        .stat-item { display: flex; align-items: center; gap: 5px; font-weight: 700; font-size: 16px; background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.2); }
+        .icon-elo { color: #f1c40f; } .icon-coins { color: #f39c12; } .icon-gems { color: #9b59b6; }
 
-        /* Кнопки (современный геймдев стиль) */
-        .btn { padding: 12px 24px; border: none; border-radius: 12px; font-size: 18px; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: all 0.1s ease; position: relative; overflow: hidden; box-shadow: 0 4px 0 rgba(0,0,0,0.3); }
-        .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.3); }
-        .btn::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 50%; background: rgba(255,255,255,0.1); border-radius: 12px 12px 0 0; }
+        /* Главные кнопки */
+        .main-nav { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: space-around; align-items: center; padding: 0 10px; z-index: 100; }
+        .btn { border: none; border-radius: 15px; font-family: 'Oswald'; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: 0.1s; box-shadow: 0 4px 0 rgba(0,0,0,0.4); }
+        .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.4); }
 
-        .btn-play { background: linear-gradient(180deg, #f1c40f 0%, #d35400 100%); color: #0d1117; font-size: 28px; padding: 15px 60px; border-radius: 20px; }
-        .btn-mode-select { background: #3498db; position: absolute; bottom: 30px; left: 20px; border-radius: 15px;}
-        .btn-shop-select { background: #9b59b6; position: absolute; bottom: 30px; right: 20px; border-radius: 15px;}
-        .btn-cancel { background: #e74c3c; margin-top: 20px;}
-        .btn-back { background: #4a5568; position: absolute; top: 10px; left: 10px; padding: 8px 16px; font-size: 14px; z-index: 110;}
-        .btn-claim { background: #2ecc71; margin-top: 10px; font-size: 16px; padding: 10px 20px;}
-        .btn-claim.disabled { background: #95a5a6; cursor: not-allowed; opacity: 0.6; }
+        .btn-side { width: 100px; height: 60px; font-size: 14px; background: #34495e; color: white; }
+        .btn-play { width: 180px; height: 80px; font-size: 28px; background: linear-gradient(180deg, #f1c40f, #e67e22); color: #000; border: 3px solid #fff; }
+        .btn-shop { background: #9b59b6; } .btn-mode { background: #3498db; }
 
-        /* Главное меню */
-        .game-title { font-size: 64px; font-weight: 900; color: white; margin-top: 40px; text-shadow: 0 0 15px #3498db, 2px 2px 0 #0d1117; letter-spacing: -2px; }
-        .daily-reward-panel { background: rgba(48, 54, 61, 0.5); border: 2px solid #30363d; border-radius: 20px; padding: 20px; margin-top: 30px; text-align: center; width: 80%; max-width: 400px;}
-        .daily-reward-title { font-size: 20px; color: #a3b3c6; margin-bottom: 10px;}
-
-        /* Магазин (Листаемый скролл-панель) */
-        .shop-container { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; padding: 20px; overflow: hidden; }
-        .shop-header { font-size: 32px; font-weight: 700; margin-bottom: 20px; color: #9b59b6; }
-        .shop-items-scroller { width: 100%; display: flex; gap: 15px; overflow-x: auto; padding: 10px; padding-bottom: 30px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;}
-        .shop-item-card { flex: 0 0 200px; height: 300px; background: rgba(30, 36, 46, 0.8); border: 3px solid #30363d; border-radius: 20px; display: flex; flex-direction: column; align-items: center; padding: 15px; scroll-snap-align: center; position: relative; transition: transform 0.2s; }
-        .shop-item-card.selected { border-color: #f1c40f; box-shadow: 0 0 15px rgba(241, 196, 15, 0.5); transform: scale(1.05); }
-        
-        .skin-preview { width: 80px; height: 80px; border-radius: 50%; border: 4px solid white; margin-bottom: 15px; position: relative;}
-        .skin-preview::after { content: ''; position: absolute; top: 10px; left: 10px; width: 20px; height: 20px; background: rgba(255,255,255,0.3); border-radius: 50%;}
-
-        .skin-name { font-size: 20px; font-weight: 700; margin-bottom: auto; text-align: center; }
-        .skin-price { display: flex; align-items: center; gap: 5px; font-size: 18px; color: #f39c12; font-weight: 700;}
-        
-        .btn-buy-skin { background: #2ecc71; width: 100%; font-size: 16px; padding: 10px; }
-        .btn-buy-skin.owned { background: #3498db; }
-        .btn-buy-skin.equipped { background: #f1c40f; color: #0d1117; }
-
-        /* Режимы */
-        .modes-list { width: 90%; max-width: 500px; display: flex; flex-direction: column; gap: 15px; margin-top: 30px; }
-        .mode-card { background: rgba(30, 36, 46, 0.8); border: 2px solid #30363d; border-radius: 15px; padding: 20px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: background 0.2s;}
-        .mode-card:hover, .mode-card.active-mode { background: #242c3b; border-color: #3498db;}
-        .mode-info h3 { margin: 0; font-size: 22px; color: white; }
-        .mode-info p { margin: 5px 0 0; font-size: 14px; color: #a3b3c6; font-family: sans-serif;}
-        .mode-icon { font-size: 30px; color: #3498db; }
+        /* Магазин (Исправленный скролл) */
+        .shop-scroller { width: 100%; display: flex; overflow-x: auto; padding: 20px; gap: 20px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+        .shop-item { flex: 0 0 180px; background: rgba(255,255,255,0.05); border: 3px solid #30363d; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; align-items: center; scroll-snap-align: center; }
+        .shop-item.selected { border-color: #f1c40f; background: rgba(241, 196, 15, 0.1); }
+        .skin-circle { width: 70px; height: 70px; border-radius: 50%; border: 4px solid #fff; margin-bottom: 10px; box-shadow: 0 0 15px rgba(255,255,255,0.2); }
+        .btn-buy { width: 100%; padding: 8px; margin-top: auto; background: #2ecc71; color: white; border-radius: 10px; font-size: 14px; }
+        .btn-buy.owned { background: #3498db; } .btn-buy.active-skin { background: #f1c40f; color: #000; }
 
         /* Геймплей */
-        #canvas-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #080a0e;}
-        canvas { background: #121820; border: 4px solid #30363d; border-radius: 20px; box-shadow: 0 0 30px rgba(0,0,0,0.8); max-width: 100%; max-height: 100%;}
-        #score-board { position: absolute; top: 30px; font-size: 48px; font-weight: 700; color: white; text-shadow: 0 0 10px rgba(255,255,255,0.5), 2px 2px 0 black; pointer-events: none; z-index: 10;}
-
+        #gameCanvas { background: #1a1f26; display: block; width: 100%; height: 100%; }
+        #score-ui { position: absolute; top: 60px; width: 100%; text-align: center; font-size: 50px; font-weight: 900; pointer-events: none; z-index: 5; text-shadow: 2px 2px 0 #000; letter-spacing: 5px; }
+        
+        /* Ежедневная награда */
+        .daily-box { margin-top: 80px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 20px; border: 1px dashed #555; text-align: center; width: 80%; }
     </style>
 </head>
 <body>
 
     <div class="top-bar">
-        <div class="stat-group">
-            <div class="stat-item"><span class="icon-elo">⭐</span> <span id="ui-elo">0</span></div>
-        </div>
-        <div class="stat-group">
-            <div class="stat-item"><span class="icon-coins">🪙</span> <span id="ui-coins">0</span></div>
-            <div class="stat-item"><span class="icon-gems">💎</span> <span id="ui-gems">0</span></div>
-        </div>
+        <div class="stat-item"><span class="icon-elo">⭐</span> <span id="ui-elo">0</span></div>
+        <div class="stat-item"><span class="icon-coins">🪙</span> <span id="ui-coins">0</span></div>
+        <div class="stat-item"><span class="icon-gems">💎</span> <span id="ui-gems">0</span></div>
     </div>
 
     <div id="screen-menu" class="screen active">
-        <div class="game-title">HOCKEY</div>
+        <h1 style="font-size: 70px; margin-top: 40px; text-shadow: 4px 4px #000;">HOCKEY</h1>
         
-        <div class="daily-reward-panel">
-            <div class="daily-reward-title">ЕЖЕДНЕВНАЯ НАГРАДА</div>
-            <div id="daily-status">Доступно через: <span id="daily-timer">--:--:--</span></div>
-            <button id="btn-claim-daily" class="btn btn-claim disabled" onclick="claimDailyReward()">ЗАБРАТЬ 100 🪙</button>
+        <div class="daily-box">
+            <div id="daily-timer" style="font-size: 14px; color: #aaa;">ПРОВЕРКА...</div>
+            <button id="btn-daily" class="btn" style="background: #2ecc71; padding: 10px 20px; margin-top: 5px;" onclick="claimDaily()">ПОДАРОК 100 🪙</button>
         </div>
 
-        <button class="btn btn-shop-select" onclick="showScreen('screen-shop')">МАГАЗИН</button>
-        <button class="btn btn-mode-select" onclick="showScreen('screen-modes')">РЕЖИМ: <span id="current-mode-text">ОНЛАЙН</span></button>
-        <button class="btn btn-play" onclick="startMatchmaking()">ИГРАТЬ</button>
-    </div>
-
-    <div id="screen-modes" class="screen">
-        <button class="btn btn-back" onclick="showScreen('screen-menu')">НАЗАД</button>
-        <h2 style="font-size: 32px; color: #3498db;">ВЫБОР РЕЖИМА</h2>
-        <div class="modes-list">
-            <div class="mode-card active-mode" id="mode-ONLINE" onclick="setMode('ONLINE')">
-                <div class="mode-info"><h3>ОНЛАЙН</h3><p>Матч против реального игрока (до 3 голов)</p></div>
-                <div class="mode-icon">🌐</div>
-            </div>
-            <div class="mode-card" id="mode-BOTS" onclick="setMode('BOTS')">
-                <div class="mode-info"><h3>БОТЫ</h3><p>Тренировка против ИИ (до 3 голов)</p></div>
-                <div class="mode-icon">🤖</div>
-            </div>
-            <div class="mode-card" id="mode-TRAINING" onclick="setMode('TRAINING')">
-                <div class="mode-info"><h3>ТРЕНИРОВКА</h3><p>Свободная игра (до 5 голов, без ELO)</p></div>
-                <div class="mode-icon">🎯</div>
-            </div>
+        <div class="main-nav">
+            <button class="btn btn-side btn-mode" onclick="showScreen('screen-modes')">РЕЖИМ:<br><span id="mode-label">ОНЛАЙН</span></button>
+            <button class="btn btn-play" onclick="startMatchmaking()">ИГРАТЬ</button>
+            <button class="btn btn-side btn-shop" onclick="showScreen('screen-shop')">МАГАЗИН</button>
         </div>
     </div>
 
     <div id="screen-shop" class="screen">
-        <button class="btn btn-back" onclick="showScreen('screen-menu')">НАЗАД</button>
-        <div class="shop-container">
-            <div class="shop-header">МАГАЗИН СКИНОВ</div>
-            <div class="shop-items-scroller" id="shop-items-container">
-                </div>
-        </div>
+        <button class="btn" style="position: absolute; top: 70px; left: 20px; background: #555; padding: 5px 15px;" onclick="showScreen('screen-menu')">← НАЗАД</button>
+        <h2 style="margin-top: 100px; font-size: 32px; color: #9b59b6;">МАГАЗИН СКИНОВ</h2>
+        <div class="shop-scroller" id="shop-list">
+            </div>
+        <p style="color: #666; font-size: 12px;">Листай вправо →</p>
     </div>
 
-    <div id="screen-matchmaking" class="screen">
-        <h2 id="match-status" style="font-size: 36px;">ПОИСК ИГРОКОВ...</h2>
-        <p style="color: #a3b3c6;">Ожидание: <span id="match-timer">0</span>с</p>
-        <button class="btn btn-cancel" onclick="cancelMatchmaking()">ОТМЕНА</button>
+    <div id="screen-modes" class="screen">
+        <button class="btn" style="position: absolute; top: 70px; left: 20px; background: #555; padding: 5px 15px;" onclick="showScreen('screen-menu')">← НАЗАД</button>
+        <h2 style="margin-top: 100px;">ВЫБЕРИ РЕЖИМ</h2>
+        <button class="btn" style="width: 80%; padding: 20px; margin: 10px; background: #3498db;" onclick="selectMode('ONLINE')">ОНЛАЙН (3 ГОЛА)</button>
+        <button class="btn" style="width: 80%; padding: 20px; margin: 10px; background: #e74c3c;" onclick="selectMode('BOTS')">БОТЫ (3 ГОЛА)</button>
+        <button class="btn" style="width: 80%; padding: 20px; margin: 10px; background: #2ecc71;" onclick="selectMode('TRAINING')">ТРЕНИРОВКА (5 ГОЛОВ)</button>
     </div>
 
-    <div id="screen-game" class="screen" style="padding: 0; justify-content: center;">
-        <div id="score-board">0 - 0</div>
-        <div id="canvas-container">
-            <canvas id="gameCanvas"></canvas>
-        </div>
+    <div id="screen-matchmaking" class="screen" style="justify-content: center;">
+        <div style="font-size: 30px; margin-bottom: 20px;">ПОИСК ИГРОКА...</div>
+        <div id="search-timer">0с</div>
+        <button class="btn btn-side" style="margin-top: 40px; background: #e74c3c;" onclick="cancelSearch()">ОТМЕНА</button>
+    </div>
+
+    <div id="screen-game" class="screen" style="padding: 0;">
+        <div id="score-ui">0 - 0</div>
+        <canvas id="gameCanvas"></canvas>
     </div>
 
 <script>
-    // --- ДАННЫЕ ИГРОКА И НАСТРОЙКИ (LocalStorage) ---
+    // --- ДАННЫЕ ---
     let player = {
-        elo: parseInt(localStorage.getItem('elo')) || 0,
-        coins: parseInt(localStorage.getItem('coins')) || 0,
-        gems: parseInt(localStorage.getItem('gems')) || 0,
-        mode: localStorage.getItem('mode') || 'ONLINE',
-        maxRounds: 3,
-        lastDailyClaim: localStorage.getItem('lastDailyClaim') || 0,
-        ownedSkins: JSON.parse(localStorage.getItem('ownedSkins')) || ['default'], // Массив ID купленных скинов
-        equippedSkin: localStorage.getItem('equippedSkin') || 'default'
+        elo: parseInt(localStorage.getItem('h_elo')) || 0,
+        coins: parseInt(localStorage.getItem('h_coins')) || 0,
+        gems: parseInt(localStorage.getItem('h_gems')) || 0,
+        mode: 'ONLINE',
+        lastDaily: parseInt(localStorage.getItem('h_daily')) || 0,
+        ownedSkins: JSON.parse(localStorage.getItem('h_skins')) || ['default'],
+        activeSkin: localStorage.getItem('h_active') || 'default'
     };
 
-    // Данные скинов (выбор, чем круче - тем дороже)
-    const skinsData = {
-        'default': { name: "КЛАССИК", price: 0, color: '#e74c3c' }, // Красный
-        'neon':    { name: "НЕОНОВЫЙ", price: 1000, color: '#2ecc71' }, // Зеленый
-        'gold':    { name: "ЗОЛОТОЙ", price: 3000, color: '#f1c40f' }, // Золотой
-        'void':    { name: "ПУСТОТА", price: 10000, color: '#9b59b6' } // Фиолетовый
+    const skins = {
+        'default': { name: 'КЛАССИК', price: 0, color: '#e74c3c' },
+        'neon': { name: 'НЕОН', price: 1500, color: '#2ecc71' },
+        'ice': { name: 'ЛЕД', price: 3000, color: '#3498db' },
+        'gold': { name: 'ЗОЛОТО', price: 7000, color: '#f1c40f' },
+        'dark': { name: 'ТЬМА', price: 15000, color: '#9b59b6' }
     };
+
+    function save() {
+        localStorage.setItem('h_elo', player.elo);
+        localStorage.setItem('h_coins', player.coins);
+        localStorage.setItem('h_gems', player.gems);
+        localStorage.setItem('h_daily', player.lastDaily);
+        localStorage.setItem('h_skins', JSON.stringify(player.ownedSkins));
+        localStorage.setItem('h_active', player.activeSkin);
+        updateUI();
+    }
 
     function updateUI() {
         document.getElementById('ui-elo').innerText = player.elo;
         document.getElementById('ui-coins').innerText = player.coins;
         document.getElementById('ui-gems').innerText = player.gems;
-        document.getElementById('current-mode-text').innerText = getModeFriendlyName(player.mode);
-        
-        localStorage.setItem('elo', player.elo);
-        localStorage.setItem('coins', player.coins);
-        localStorage.setItem('gems', player.gems);
-        localStorage.setItem('lastDailyClaim', player.lastDailyClaim);
-        localStorage.setItem('ownedSkins', JSON.stringify(player.ownedSkins));
-        localStorage.setItem('equippedSkin', player.equippedSkin);
-    }
-    
-    function getModeFriendlyName(mode) {
-        const names = { 'ONLINE': 'ОНЛАЙН', 'BOTS': 'БОТЫ', 'TRAINING': 'ТРЕНИРОВКА' };
-        return names[mode];
+        document.getElementById('mode-label').innerText = player.mode === 'ONLINE' ? 'ОНЛАЙН' : (player.mode === 'BOTS' ? 'БОТЫ' : 'ТРЕНИРОВКА');
     }
 
-    updateUI();
-    updateDailyRewardUI();
-    setInterval(updateDailyRewardUI, 1000); // Обновляем таймер награды каждую секунду
+    // --- МАГАЗИН ---
+    function renderShop() {
+        const list = document.getElementById('shop-list');
+        list.innerHTML = '';
+        Object.keys(skins).forEach(id => {
+            const s = skins[id];
+            const isOwned = player.ownedSkins.includes(id);
+            const isActive = player.activeSkin === id;
+            
+            const item = document.createElement('div');
+            item.className = `shop-item ${isActive ? 'selected' : ''}`;
+            item.innerHTML = `
+                <div class="skin-circle" style="background: ${s.color}"></div>
+                <div style="font-weight: bold; margin-bottom: 5px;">${s.name}</div>
+                <div style="font-size: 14px; color: #f39c12; margin-bottom: 10px;">${isOwned ? 'КУПЛЕНО' : '🪙 ' + s.price}</div>
+                <button class="btn btn-buy ${isOwned ? (isActive ? 'active-skin' : 'owned') : ''}" 
+                        onclick="${isOwned ? `equip('${id}')` : `buy('${id}')`}">
+                    ${isActive ? 'ВЫБРАНО' : (isOwned ? 'ВЫБРАТЬ' : 'КУПИТЬ')}
+                </button>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    function buy(id) {
+        if (player.coins >= skins[id].price) {
+            player.coins -= skins[id].price;
+            player.ownedSkins.push(id);
+            save(); renderShop();
+        } else alert("Недостаточно монет!");
+    }
+    function equip(id) { player.activeSkin = id; save(); renderShop(); }
+
+    // --- ЕЖЕДНЕВКА ---
+    function checkDaily() {
+        const now = Date.now();
+        const diff = now - player.lastDaily;
+        const btn = document.getElementById('btn-daily');
+        if (diff < 86400000) {
+            btn.style.opacity = '0.5';
+            btn.disabled = true;
+            document.getElementById('daily-timer').innerText = "ЗАВТРА БУДЕТ НОВЫЙ";
+        } else {
+            btn.style.opacity = '1';
+            btn.disabled = false;
+            document.getElementById('daily-timer').innerText = "ПОДАРОК ГОТОВ!";
+        }
+    }
+
+    function claimDaily() {
+        player.coins += 100;
+        player.lastDaily = Date.now();
+        save(); checkDaily();
+        alert("Получено 100 монет!");
+    }
 
     // --- НАВИГАЦИЯ ---
-    function showScreen(screenId) {
+    function showScreen(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(screenId).classList.add('active');
-        if(screenId === 'screen-shop') renderShop();
+        document.getElementById(id).classList.add('active');
+        if(id === 'screen-shop') renderShop();
+        if(id === 'screen-menu') checkDaily();
     }
 
-    function setMode(mode) {
-        player.mode = mode;
-        player.maxRounds = mode === 'TRAINING' ? 5 : 3;
-        localStorage.setItem('mode', mode);
-        
-        document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('active-mode'));
-        document.getElementById(`mode-${mode}`).classList.add('active-mode');
+    function selectMode(m) { player.mode = m; save(); showScreen('screen-menu'); }
 
-        updateUI();
-        showScreen('screen-menu');
-    }
-
-    // --- СИСТЕМА ЕЖЕДНЕВНЫХ НАГРАД ---
-    function updateDailyRewardUI() {
-        const now = Date.now();
-        const oneDayMs = 24 * 60 * 60 * 1000;
-        const timeSinceClaim = now - player.lastDailyClaim;
-        const btnClaim = document.getElementById('btn-claim-daily');
-        const timerText = document.getElementById('daily-timer');
-        const statusText = document.getElementById('daily-status');
-
-        if (timeSinceClaim >= oneDayMs) {
-            btnClaim.classList.remove('disabled');
-            btnClaim.innerText = "ЗАБРАТЬ 100 🪙";
-            statusText.innerText = "Награда готова!";
-        } else {
-            btnClaim.classList.add('disabled');
-            const timeLeftMs = oneDayMs - timeSinceClaim;
-            const hours = Math.floor(timeLeftMs / (1000 * 60 * 60));
-            const minutes = Math.floor((timeLeftMs % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((timeLeftMs % (1000 * 60)) / 1000);
-            timerText.innerText = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-            statusText.innerHTML = `Доступно через: <span id="daily-timer">${timerText.innerText}</span>`;
-            btnClaim.innerText = "УЖЕ ЗАБРАНО";
-        }
-    }
-
-    function claimDailyReward() {
-        const now = Date.now();
-        const oneDayMs = 24 * 60 * 60 * 1000;
-        if (now - player.lastDailyClaim >= oneDayMs) {
-            player.coins += 100;
-            player.lastDailyClaim = now;
-            updateUI();
-            updateDailyRewardUI();
-            alert("Ты получил 100 🪙 монет!");
-        }
-    }
-
-    // --- МАГАЗИН СКИНОВ (Как в BS, выбор) ---
-    function renderShop() {
-        const container = document.getElementById('shop-items-container');
-        container.innerHTML = ''; // Очищаем
-
-        for (const [id, skin] of Object.entries(skinsData)) {
-            const isOwned = player.ownedSkins.includes(id);
-            const isEquipped = player.equippedSkin === id;
-            const canAfford = player.coins >= skin.price;
-
-            const card = document.createElement('div');
-            card.className = `shop-item-card ${isEquipped ? 'selected' : ''}`;
-            
-            let buttonHtml = '';
-            if (isEquipped) {
-                buttonHtml = `<button class="btn btn-buy-skin equipped disabled">ВЫБРАН</button>`;
-            } else if (isOwned) {
-                buttonHtml = `<button class="btn btn-buy-skin owned" onclick="equipSkin('${id}')">ВЫБРАТЬ</button>`;
-            } else {
-                buttonHtml = `<button class="btn btn-buy-skin ${canAfford ? '' : 'disabled'}" onclick="buySkin('${id}')">КУПИТЬ</button>`;
-            }
-
-            card.innerHTML = `
-                <div class="skin-preview" style="background-color: ${skin.color};"></div>
-                <div class="skin-name">${skin.name}</div>
-                ${!isOwned ? `<div class="skin-price">🪙 ${skin.price.toLocaleString('ru-RU')}</div>` : '<div class="skin-price" style="color:#3498db">КУПЛЕНО</div>'}
-                ${buttonHtml}
-            `;
-            container.appendChild(card);
-        }
-    }
-
-    function buySkin(id) {
-        const skin = skinsData[id];
-        if (player.coins >= skin.price && !player.ownedSkins.includes(id)) {
-            player.coins -= skin.price;
-            player.ownedSkins.push(id);
-            updateUI();
-            renderShop();
-            alert(`Поздравляем! Ты купил скин "${skin.name}".`);
-        } else if (player.coins < skin.price) {
-            alert("Недостаточно монет!");
-        }
-    }
-
-    function equipSkin(id) {
-        if (player.ownedSkins.includes(id)) {
-            player.equippedSkin = id;
-            updateUI();
-            renderShop();
-        }
-    }
-
-    // --- ПОДБОР (Симуляция) ---
-    let matchTimerInterval;
-    let secondsSearching = 0;
+    let searchInt;
     function startMatchmaking() {
         showScreen('screen-matchmaking');
-        secondsSearching = 0;
-        document.getElementById('match-timer').innerText = secondsSearching;
-        document.getElementById('match-status').innerText = player.mode === 'ONLINE' ? "ПОИСК ИГРОКОВ..." : "ЗАГРУЗКА БОТОВ...";
-        
-        let delay = player.mode === 'ONLINE' ? (Math.random() * 3000 + 2000) : 1000;
-        
-        matchTimerInterval = setInterval(() => {
-            secondsSearching++;
-            document.getElementById('match-timer').innerText = secondsSearching;
-        }, 1000);
-
-        setTimeout(() => {
-            clearInterval(matchTimerInterval);
-            startGame();
-        }, delay);
-    }
-
-    function cancelMatchmaking() {
-        clearInterval(matchTimerInterval);
-        showScreen('screen-menu');
-    }
-
-    // --- ELO РАСЧЕТ ---
-    function calculateElo(goalsFor, goalsAgainst) {
-        let e = player.elo;
-        let gainedElo = 0;
-        let isPerfect = (goalsAgainst === 0);
-        let isClose = (goalsFor - goalsAgainst <= 1);
-
-        if (e < 1000) {
-            gainedElo = isPerfect ? 30 : (isClose ? 10 : 20);
-        } else if (e < 1500) {
-            gainedElo = isPerfect ? 20 : (isClose ? 5 : 12);
-        } else if (e < 3000) {
-            gainedElo = isPerfect ? 15 : (isClose ? 5 : 10);
-        } else if (e < 10000) {
-            gainedElo = isPerfect ? 10 : (isClose ? 5 : 7);
-        } else {
-            gainedElo = 5;
-        }
-        return gainedElo;
-    }
-
-    function matchOver(playerWon, pGoals, eGoals) {
-        gameRunning = false;
-        if(player.mode !== 'TRAINING') {
-            if(playerWon) {
-                let eloGained = calculateElo(pGoals, eGoals);
-                player.elo += eloGained;
-                player.coins += 100;
-                player.gems += 1;
-                alert(`ПОБЕДА!\nСчет: ${pGoals} - ${eGoals}\n+${eloGained} ELO\n+100 Монет\n+1 Кристалл`);
-            } else {
-                alert(`ПОРАЖЕНИЕ!\nСчет: ${pGoals} - ${eGoals}`);
+        let sec = 0;
+        searchInt = setInterval(() => {
+            sec++;
+            document.getElementById('search-timer').innerText = sec + "с";
+            if (sec >= (player.mode === 'ONLINE' ? 3 : 1)) {
+                clearInterval(searchInt);
+                initGame();
             }
-        } else {
-            alert(`Тренировка завершена.\nСчет: ${pGoals} - ${eGoals}`);
-        }
-        updateUI();
-        showScreen('screen-menu');
+        }, 1000);
     }
+    function cancelSearch() { clearInterval(searchInt); showScreen('screen-menu'); }
 
-    // --- ИГРОВОЙ ДВИЖОК (ХОККЕЙ - ТЕМНАЯ ТЕМА, ФИЗИКА СВАЙПА, ИИ) ---
+    // --- ИГРА ---
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    let gameRunning = false;
-    let scores = { player: 0, enemy: 0 };
-
-    // Размеры и объекты
+    let gameActive = false;
     let cw, ch;
+    let score = [0, 0];
+
     let puck = { x: 0, y: 0, vx: 0, vy: 0, r: 15 };
-    
-    // Игрок (Скин)
-    let playerPaddle = { x: 0, y: 0, r: 35, prevX: 0, prevY: 0, speedX: 0, speedY: 0 };
-    // Противник (Бот)
-    let enemyPaddle = { x: 0, y: 0, r: 35, color: '#3498db' }; // Синий
+    let p1 = { x: 0, y: 0, r: 35, vx: 0, vy: 0, lastX: 0, lastY: 0 }; // Игрок
+    let bot = { x: 0, y: 0, r: 35, speed: 0 }; // Бот
 
-    function resizeCanvas() {
-        cw = window.innerWidth * 0.95;
-        ch = window.innerHeight * 0.85;
-        if(cw > 500) cw = 500; // Ограничение для ПК
-        canvas.width = cw;
-        canvas.height = ch;
-    }
-    window.addEventListener('resize', resizeCanvas);
-
-    function resetPositions() {
-        puck.x = cw / 2; puck.y = ch / 2;
-        puck.vx = (Math.random() - 0.5) * 4; // Случайный начальный импульс
-        puck.vy = (Math.random() - 0.5) * 4;
-        
-        playerPaddle.x = cw / 2; playerPaddle.y = ch - 80;
-        playerPaddle.prevX = playerPaddle.x; playerPaddle.prevY = playerPaddle.y;
-
-        enemyPaddle.x = cw / 2; enemyPaddle.y = 80;
-    }
-
-    function startGame() {
-        resizeCanvas();
-        resetPositions();
-        scores = { player: 0, enemy: 0 };
-        document.getElementById('score-board').innerText = `0 - 0`;
+    function initGame() {
+        cw = canvas.width = window.innerWidth;
+        ch = canvas.height = window.innerHeight;
+        score = [0, 0];
+        resetPuck();
         showScreen('screen-game');
-        gameRunning = true;
-        gameLoop();
+        gameActive = true;
+        // Сложность бота зависит от ELO
+        bot.speed = 3 + (player.elo / 1500); 
+        if (bot.speed > 8) bot.speed = 8; // Макс скорость чтобы не был "читерским"
+        requestAnimationFrame(update);
     }
 
-    // --- УПРАВЛЕНИЕ ИГРОКОМ (ФИЗИКА СВАЙПА) ---
-    canvas.addEventListener('touchmove', (e) => {
-        if(!gameRunning) return;
-        e.preventDefault();
-        let rect = canvas.getBoundingClientRect();
-        let touchX = e.touches[0].clientX - rect.left;
-        let touchY = e.touches[0].clientY - rect.top;
-
-        // Ограничиваем движение игрока его половиной поля (нижней)
-        let targetX = Math.max(playerPaddle.r, Math.min(cw - playerPaddle.r, touchX));
-        let targetY = Math.max(ch/2 + playerPaddle.r, Math.min(ch - playerPaddle.r, touchY));
-
-        playerPaddle.x = targetX;
-        playerPaddle.y = targetY;
-    }, {passive: false});
-
-    // Расчет скорости игрока для силы удара
-    function updatePlayerSpeed() {
-        playerPaddle.speedX = playerPaddle.x - playerPaddle.prevX;
-        playerPaddle.speedY = playerPaddle.y - playerPaddle.prevY;
-        playerPaddle.prevX = playerPaddle.x;
-        playerPaddle.prevY = playerPaddle.y;
+    function resetPuck() {
+        puck.x = cw / 2; puck.y = ch / 2;
+        puck.vx = 0; puck.vy = 0;
+        p1.x = cw / 2; p1.y = ch - 100;
+        bot.x = cw / 2; bot.y = 100;
     }
 
-    // --- ФИЗИКА СТОЛКНОВЕНИЙ (Ракета бьет шайбу, сила зависит от скорости свайпа) ---
-    function resolveCollision(paddle, p, isPlayer) {
-        let dx = p.x - paddle.x;
-        let dy = p.y - paddle.y;
-        let dist = Math.sqrt(dx*dx + dy*dy);
+    canvas.addEventListener('touchmove', e => {
+        if (!gameActive) return;
+        const t = e.touches[0];
+        // Игрок может двигаться только на своей половине
+        p1.x = t.clientX;
+        p1.y = Math.max(ch / 2 + p1.r, Math.min(ch - p1.r, t.clientY));
         
-        if (dist < paddle.r + p.r) {
-            // Выталкиваем шайбу (нормализация вектора столкновения)
-            let nx = dx / dist;
-            let ny = dy / dist;
-            let overlap = (paddle.r + p.r) - dist;
-            p.x += nx * overlap;
-            p.y += ny * overlap;
-            
-            // Базовый импульс отскока
-            p.vx = nx * 12;
-            p.vy = ny * 12;
+        // Считаем скорость свайпа для силы удара
+        p1.vx = p1.x - p1.lastX;
+        p1.vy = p1.y - p1.lastY;
+        p1.lastX = p1.x;
+        p1.lastY = p1.y;
+    });
 
-            // РЕАЛИСТИЧНАЯ ФИЗИКА: Добавляем импульс от движения ракетки (только для игрока)
-            if(isPlayer) {
-                // Чем быстрее игрок двинул пальцем, тем сильнее отлетает шайба (K - коэффициент силы)
-                const forceK = 0.6;
-                p.vx += paddle.speedX * forceK;
-                p.vy += paddle.speedY * forceK;
-            }
-        }
-    }
-
-    // --- ИИ ПРОТИВНИКА (БОТ) ---
-    function updateEnemyAI() {
-        // Простая логика: Бот всегда на своей половине, пытается отбить шайбу
-        if(puck.y < ch/2) {
-            // Если шайба на его половине, он преследует её по X
-            let targetX = puck.x;
-            // Двигается к шайбе по Y, но сохраняет дистанцию
-            let targetY = puck.y - 40;
-
-            // Добавляем плавность движения (Бот не идеален)
-            const botSpeedK = 0.08; 
-            enemyPaddle.x += (targetX - enemyPaddle.x) * botSpeedK;
-            enemyPaddle.y += (targetY - enemyPaddle.y) * botSpeedK;
-
-        } else {
-            // Если шайба на чужой половине, возвращается в защиту (центр ворот)
-            enemyPaddle.x += (cw/2 - enemyPaddle.x) * 0.05;
-            enemyPaddle.y += (80 - enemyPaddle.y) * 0.05;
-        }
-
-        // Ограничения бота (его половина)
-        enemyPaddle.x = Math.max(enemyPaddle.r, Math.min(cw - enemyPaddle.r, enemyPaddle.x));
-        enemyPaddle.y = Math.max(enemyPaddle.r, Math.min(ch/2 - enemyPaddle.r, enemyPaddle.y));
-    }
-
-    // Основной цикл обновления физики
     function update() {
-        // Расчет скорости игрока
-        updatePlayerSpeed();
+        if (!gameActive) return;
 
-        // Движение шайбы
+        // Физика шайбы
         puck.x += puck.vx;
         puck.y += puck.vy;
-        
-        // Трение (шайба замедляется)
-        const friction = 0.992;
-        puck.vx *= friction;
-        puck.vy *= friction;
+        puck.vx *= 0.985; puck.vy *= 0.985; // Трение
 
-        // Столкновение со стенами (лево/право)
-        if (puck.x - puck.r < 0) { puck.x = puck.r; puck.vx *= -0.8; }
-        if (puck.x + puck.r > cw) { puck.x = cw - puck.r; puck.vx *= -0.8; }
-
-        // Логика Ворот (по центру, ширина 120px)
-        let goalWidth = 140;
-        let isGoal = false;
-
-        if (puck.y - puck.r < 0) {
-            // Верхние ворота (Игрок забил боту)
-            if(puck.x > cw/2 - goalWidth/2 && puck.x < cw/2 + goalWidth/2) {
-                scores.player++; isGoal = true;
-            } else { puck.y = puck.r; puck.vy *= -0.8; }
-        }
-        if (puck.y + puck.r > ch) {
-            // Нижние ворота (Бот забил игроку)
-            if(puck.x > cw/2 - goalWidth/2 && puck.x < cw/2 + goalWidth/2) {
-                scores.enemy++; isGoal = true;
-            } else { puck.y = ch - puck.r; puck.vy *= -0.8; }
+        // Стены
+        if (puck.x < puck.r || puck.x > cw - puck.r) {
+            puck.vx *= -0.7;
+            puck.x = puck.x < puck.r ? puck.r : cw - puck.r;
         }
 
-        if(isGoal) {
-            document.getElementById('score-board').innerText = `${scores.enemy} - ${scores.player}`;
-            if(scores.player >= player.maxRounds) { matchOver(true, scores.player, scores.enemy); return; }
-            if(scores.enemy >= player.maxRounds) { matchOver(false, scores.player, scores.enemy); return; }
-            resetPositions();
+        // БОТ: плавное движение, без телепортации
+        let targetX = puck.x;
+        // Если шайба на стороне бота, он атакует
+        if (puck.y < ch / 2) {
+            let dx = targetX - bot.x;
+            bot.x += Math.sign(dx) * Math.min(Math.abs(dx), bot.speed);
+            
+            let dy = (puck.y - 50) - bot.y;
+            bot.y += Math.sign(dy) * Math.min(Math.abs(dy), bot.speed);
+        } else {
+            // Возврат к воротам
+            let dx = (cw / 2) - bot.x;
+            bot.x += Math.sign(dx) * Math.min(Math.abs(dx), bot.speed * 0.5);
+            bot.y += (100 - bot.y) * 0.1;
         }
 
-        // Обновление ИИ
-        updateEnemyAI();
+        // Столкновения (Игрок)
+        handleCol(p1, true);
+        handleCol(bot, false);
 
-        // Проверка столкновений ракеток с шайбой
-        resolveCollision(playerPaddle, puck, true); // Игрок с физикой свайпа
-        resolveCollision(enemyPaddle, puck, false); // Бот
+        // Голы
+        if (puck.y < 0 || puck.y > ch) {
+            const goalArea = (puck.x > cw/2 - 70 && puck.x < cw/2 + 70);
+            if (goalArea) {
+                if (puck.y < 0) score[0]++; else score[1]++;
+                document.getElementById('score-ui').innerText = `${score[1]} - ${score[0]}`;
+                
+                let limit = player.mode === 'TRAINING' ? 5 : 3;
+                if (score[0] >= limit || score[1] >= limit) {
+                    endGame(score[0] > score[1]);
+                    return;
+                }
+                resetPuck();
+            } else {
+                puck.vy *= -0.8;
+                puck.y = puck.y < 0 ? puck.r : ch - puck.r;
+            }
+        }
+
+        draw();
+        requestAnimationFrame(update);
     }
 
-    // --- ОТРИСОВКА ПОЛЯ (ТЕМНАЯ ТЕМА + СТРУКТУРА СО СКРИНШОТА) ---
+    function handleCol(m, isPlayer) {
+        let dx = puck.x - m.x;
+        let dy = puck.y - m.y;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < puck.r + m.r) {
+            let angle = Math.atan2(dy, dx);
+            // Сила удара: база + скорость движения руки
+            let force = isPlayer ? (8 + Math.sqrt(m.vx**2 + m.vy**2) * 0.5) : 10;
+            if (force > 25) force = 25; // Ограничение силы
+            
+            puck.vx = Math.cos(angle) * force;
+            puck.vy = Math.sin(angle) * force;
+            
+            // Выталкивание
+            puck.x = m.x + Math.cos(angle) * (puck.r + m.r);
+            puck.y = m.y + Math.sin(angle) * (puck.r + m.r);
+        }
+    }
+
     function draw() {
         ctx.clearRect(0, 0, cw, ch);
         
-        // 1. Полосатый фон (как на скрине, только темный)
-        const stripeCount = 6;
-        const stripeWidth = cw / stripeCount;
-        ctx.fillStyle = '#121820'; // Основной темный
-        ctx.fillRect(0,0,cw,ch);
+        // Разметка поля
+        ctx.strokeStyle = "rgba(255,255,255,0.1)"; ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.moveTo(0, ch/2); ctx.lineTo(cw, ch/2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cw/2, ch/2, 60, 0, Math.PI*2); ctx.stroke();
         
-        ctx.fillStyle = '#0d1117'; // Полосатый
-        for(let i=1; i<stripeCount; i+=2) {
-            ctx.fillRect(i * stripeWidth, 0, stripeWidth, ch);
-        }
+        // Ворота
+        ctx.fillStyle = "#3498db"; ctx.fillRect(cw/2 - 70, 0, 140, 10);
+        ctx.fillStyle = "#e74c3c"; ctx.fillRect(cw/2 - 70, ch-10, 140, 10);
 
-        // 2. Красная центральная линия
-        ctx.beginPath(); ctx.moveTo(0, ch/2); ctx.lineTo(cw, ch/2);
-        ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 4; ctx.stroke();
-        
-        // 3. Центральный круг (Синий, как на скрине)
-        ctx.beginPath(); ctx.arc(cw/2, ch/2, 60, 0, Math.PI*2);
-        ctx.strokeStyle = '#3498db'; ctx.lineWidth = 3; ctx.stroke();
+        // Бот
+        ctx.fillStyle = "#3498db"; ctx.beginPath();
+        ctx.arc(bot.x, bot.y, bot.r, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = "white"; ctx.stroke();
 
-        // 4. Четыре красных круга (как на скрине)
-        const circleR = 70;
-        ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 2;
-        // Верхний левый
-        ctx.beginPath(); ctx.arc(stripeWidth * 1, ch/4, circleR, 0, Math.PI*2); ctx.stroke();
-        // Верхний правый
-        ctx.beginPath(); ctx.arc(stripeWidth * 5, ch/4, circleR, 0, Math.PI*2); ctx.stroke();
-        // Нижний левый
-        ctx.beginPath(); ctx.arc(stripeWidth * 1, ch*0.75, circleR, 0, Math.PI*2); ctx.stroke();
-        // Нижний правый
-        ctx.beginPath(); ctx.arc(stripeWidth * 5, ch*0.75, circleR, 0, Math.PI*2); ctx.stroke();
-
-        // 5. Красные точки в кругах (как на скрине)
-        ctx.fillStyle = '#e74c3c';
-        const dotR = 5;
-        // Точки вокруг верхнего левого
-        ctx.beginPath(); ctx.arc(stripeWidth*1, ch/4 - circleR/2, dotR, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(stripeWidth*1, ch/4 + circleR/2, dotR, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(stripeWidth*1 - circleR/2, ch/4, dotR, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(stripeWidth*1 + circleR/2, ch/4, dotR, 0, Math.PI*2); ctx.fill();
-        // (Остальные точки можно добавить аналогично для точности)
-
-        // 6. Ворота (светящиеся)
-        let goalWidth = 140;
-        ctx.shadowColor = '#fff'; ctx.shadowBlur = 10; ctx.fillStyle = '#0d1117';
-        ctx.fillRect(cw/2 - goalWidth/2, 0, goalWidth, 12); // Верхние
-        ctx.fillRect(cw/2 - goalWidth/2, ch-12, goalWidth, 12); // Нижние
-        ctx.shadowBlur = 0; // Сброс тени
-
-        // --- ОБЪЕКТЫ ---
-
-        // Противник (Бот)
-        ctx.beginPath(); ctx.arc(enemyPaddle.x, enemyPaddle.y, enemyPaddle.r, 0, Math.PI*2);
-        ctx.fillStyle = enemyPaddle.color; ctx.fill(); 
-        ctx.strokeStyle = 'white'; ctx.lineWidth = 3; ctx.stroke();
-        // Блик
-        ctx.beginPath(); ctx.arc(enemyPaddle.x - 10, enemyPaddle.y - 10, 8, 0, Math.PI*2); ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.fill();
-
-        // Игрок (Скин)
-        ctx.beginPath(); ctx.arc(playerPaddle.x, playerPaddle.y, playerPaddle.r, 0, Math.PI*2);
-        ctx.fillStyle = skinsData[player.equippedSkin].color; ctx.fill();
-        ctx.strokeStyle = 'white'; ctx.lineWidth = 3; ctx.stroke();
-        // Блик
-        ctx.beginPath(); ctx.arc(playerPaddle.x - 10, playerPaddle.y - 10, 8, 0, Math.PI*2); ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.fill();
+        // Игрок
+        ctx.fillStyle = skins[player.activeSkin].color; ctx.beginPath();
+        ctx.arc(p1.x, p1.y, p1.r, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = "white"; ctx.stroke();
 
         // Шайба
-        ctx.beginPath(); ctx.arc(puck.x, puck.y, puck.r, 0, Math.PI*2);
-        ctx.fillStyle = 'white'; ctx.fill();
+        ctx.fillStyle = "white"; ctx.shadowBlur = 10; ctx.shadowColor = "white";
+        ctx.beginPath(); ctx.arc(puck.x, puck.y, puck.r, 0, Math.PI*2); ctx.fill();
+        ctx.shadowBlur = 0;
     }
 
-    // Игровой цикл
-    function gameLoop() {
-        if(!gameRunning) return;
-        update();
-        draw();
-        requestAnimationFrame(gameLoop);
+    function endGame(win) {
+        gameActive = false;
+        if (player.mode !== 'TRAINING') {
+            if (win) {
+                // Твоя формула ELO
+                let gain = 0;
+                if(player.elo < 1000) gain = 25;
+                else if(player.elo < 1500) gain = 15;
+                else if(player.elo < 3000) gain = 10;
+                else gain = 5;
+                
+                player.elo += gain;
+                player.coins += 100;
+                player.gems += 1;
+                alert(`ПОБЕДА! +${gain} ELO`);
+            } else {
+                alert("ПОРАЖЕНИЕ!");
+            }
+        } else alert("ТРЕНИРОВКА ОКОНЧЕНА");
+        save();
+        showScreen('screen-menu');
     }
+
+    updateUI();
+    checkDaily();
 </script>
 </body>
 </html>
