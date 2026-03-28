@@ -3,457 +3,330 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CC 2: Counter Cat</title>
+    <title>CC 2: Counter Cat Online</title>
     <style>
-        /* CSS: Mobile First, отключение зума и скролла */
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body, html { width: 100vw; height: 100vh; background-color: #1a1a2e; overflow: hidden; touch-action: none; color: white; }
-        
-        /* UI Элементы */
-        #game-container { position: relative; width: 100%; height: 100%; }
-        canvas { display: block; width: 100%; height: 100%; }
-        
+        :root { --primary: #e94560; --bg: #1a1a2e; --panel: #16213e; --accent: #0f3460; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
+        body, html { width: 100%; height: 100%; background: var(--bg); overflow: hidden; font-family: sans-serif; color: white; }
+
+        /* Слои */
+        #gameCanvas { position: absolute; top: 0; left: 0; z-index: 1; width: 100%; height: 100%; }
+        #ui-layer { position: absolute; top: 0; left: 0; z-index: 10; width: 100%; height: 100%; pointer-events: none; }
+        .interactive { pointer-events: auto; } /* Для кнопок поверх канваса */
+
         /* Верхняя панель */
-        #top-bar { position: absolute; top: 0; width: 100%; padding: 10px; background: rgba(0,0,0,0.6); display: flex; justify-content: space-between; align-items: center; z-index: 10; }
-        .user-info { display: flex; align-items: center; gap: 10px; }
-        .avatar { width: 40px; height: 40px; background: #e94560; border-radius: 50%; border: 2px solid #fff; }
-        .stats { display: flex; flex-direction: column; font-size: 14px; font-weight: bold; }
-        #elo-display { color: #f9a826; cursor: pointer; font-size: 16px; text-decoration: underline; }
-        
-        /* Главное меню */
-        #main-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a2e; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; }
-        .menu-title { font-size: 32px; color: #e94560; margin-bottom: 30px; font-weight: 900; text-shadow: 2px 2px #0f3460; }
-        .btn { width: 80%; padding: 15px; margin: 10px 0; background: #0f3460; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 4px #0a2040; transition: 0.1s; }
-        .btn:active { transform: translateY(4px); box-shadow: 0 0 #0a2040; }
-        .btn-shop { background: #e94560; box-shadow: 0 4px #8a1c30; }
-        
-        /* Модальные окна (Авторизация, Лидерборд) */
-        .modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 30; }
-        .modal-content { background: #16213e; padding: 20px; border-radius: 15px; width: 90%; text-align: center; }
-        input[type="text"] { width: 100%; padding: 10px; margin: 15px 0; border-radius: 5px; border: none; font-size: 16px; text-align: center; }
-        
-        /* Таблица лидеров */
-        #leaderboard-list { list-style: none; margin: 15px 0; max-height: 250px; overflow-y: auto; text-align: left; }
-        #leaderboard-list li { padding: 8px; border-bottom: 1px solid #0f3460; display: flex; justify-content: space-between; }
-        
-        /* Игровой интерфейс */
-        #game-ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 5; }
-        #score-board { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 48px; opacity: 0.3; font-weight: bold; pointer-events: none; }
-        
-        /* Кнопка способности */
-        #ability-btn { position: absolute; bottom: 30px; right: 30px; width: 80px; height: 80px; background: #e94560; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 0 15px #e94560; pointer-events: auto; display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: bold; opacity: 0.9; }
-        #ability-btn:active { transform: scale(0.95); opacity: 1; }
-        #ability-btn.cooldown { background: #555; box-shadow: none; pointer-events: none; }
-        
-        /* Затемнение экрана (способность Горчицы) */
-        #blind-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: black; opacity: 0; pointer-events: none; transition: opacity 0.1s; z-index: 6; }
+        #top-bar { position: absolute; top: 0; width: 100%; padding: 10px; background: rgba(0,0,0,0.7); display: flex; justify-content: space-between; align-items: center; z-index: 20; }
+        .stats-group { display: flex; flex-direction: column; font-size: 14px; }
+        #elo-display { color: #f9a826; font-weight: bold; text-decoration: underline; cursor: pointer; }
+
+        /* Меню */
+        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
+        .hidden { display: none !important; }
+
+        .btn { width: 80%; padding: 18px; margin: 10px 0; background: var(--accent); color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; box-shadow: 0 4px #05162d; transition: 0.1s; }
+        .btn:active { transform: translateY(2px); box-shadow: 0 2px #05162d; }
+        .btn-main { background: var(--primary); box-shadow: 0 4px #a02d40; }
+
+        /* Магазин/Выбор */
+        #shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 90%; margin-bottom: 20px; }
+        .fighter-card { background: var(--panel); padding: 10px; border-radius: 10px; text-align: center; border: 2px solid transparent; }
+        .fighter-card.active { border-color: var(--primary); }
+
+        /* Игра */
+        #ability-btn { position: absolute; bottom: 40px; right: 20px; width: 85px; height: 85px; background: var(--primary); border-radius: 50%; border: 4px solid white; display: flex; align-items: center; justify-content: center; font-size: 30px; z-index: 50; box-shadow: 0 0 20px rgba(233,69,96,0.5); }
+        #ability-btn.cooldown { background: #444; filter: grayscale(1); }
+        #score-view { position: absolute; top: 50%; width: 100%; text-align: center; font-size: 60px; font-weight: 900; opacity: 0.15; transform: translateY(-50%); }
+        #blind-fx { position: absolute; top:0; left:0; width:100%; height:100%; background:black; opacity:0; pointer-events:none; z-index: 200; }
     </style>
 </head>
 <body>
 
-<div id="game-container">
-    <canvas id="gameCanvas"></canvas>
-    <div id="blind-overlay"></div>
-    
-    <div id="top-bar">
-        <div class="user-info">
-            <div class="avatar"></div>
-            <div class="stats">
-                <span id="player-nick">Player</span>
-                <span>💰 <span id="player-coins">0</span></span>
+    <div id="blind-fx"></div>
+
+    <div id="ui-layer">
+        <div id="top-bar" class="interactive">
+            <div class="stats-group">
+                <b id="ui-nick">Загрузка...</b>
+                <span>💰 <span id="ui-coins">0</span></span>
+            </div>
+            <div class="stats-group" style="align-items: flex-end;">
+                <span>ELO</span>
+                <span id="elo-display">0</span>
             </div>
         </div>
-        <div class="stats" style="align-items: flex-end;">
-            <span>ELO</span>
-            <span id="elo-display">0</span>
-        </div>
+
+        <div id="score-view">0 : 0</div>
+        
+        <div id="ability-btn" class="interactive hidden">⚡</div>
     </div>
 
-    <div id="game-ui">
-        <div id="score-board"><span id="score-opp">0</span> : <span id="score-player">0</span></div>
-        <div id="ability-btn">⚡</div>
+    <div id="screen-auth" class="screen">
+        <h1 style="margin-bottom: 20px;">Counter Cat 2</h1>
+        <input type="text" id="nick-in" placeholder="Твой ник" style="width:80%; padding:15px; border-radius:10px; border:none; margin-bottom:20px; text-align:center; font-size:18px;">
+        <button class="btn btn-main interactive" id="btn-do-login">Войти в игру</button>
     </div>
 
-    <div id="main-menu">
-        <div class="menu-title">CC 2</div>
-        <button class="btn" id="btn-train">Тренировка</button>
-        <button class="btn" id="btn-online">Онлайн (1 на 1)</button>
-        <button class="btn" id="btn-duo">Дуо (2 на 2) [В разработке]</button>
-        <div style="display: flex; width: 80%; gap: 10px; margin-top: 20px;">
-            <button class="btn btn-shop" style="flex: 1;" id="btn-shop">Магазин</button>
-            <button class="btn" style="flex: 1;">⚙️ RU</button>
-        </div>
+    <div id="screen-menu" class="screen hidden">
+        <h2 style="margin-bottom:30px; font-size:40px; color:var(--primary)">CC 2</h2>
+        <button class="btn btn-main interactive" onclick="startGame('train')">Тренировка</button>
+        <button class="btn interactive" onclick="startGame('online')">Онлайн 1x1</button>
+        <button class="btn interactive" onclick="showShop()">Бойцы / Магазин</button>
+        <button class="btn interactive" onclick="alert('English / Ukrainian')">Язык: RU</button>
     </div>
 
-    <div id="auth-modal" class="modal">
-        <div class="modal-content">
-            <h2>Добро пожаловать в CC 2</h2>
-            <input type="text" id="nick-input" placeholder="Введите никнейм..." maxlength="12">
-            <button class="btn" id="btn-login">Играть</button>
-        </div>
+    <div id="screen-shop" class="screen hidden">
+        <h3>Выбери кота</h3>
+        <div id="shop-grid" class="interactive"></div>
+        <button class="btn interactive" onclick="hideShop()">Назад</button>
     </div>
 
-    <div id="leaderboard-modal" class="modal">
-        <div class="modal-content">
-            <h2>Топ Игроков</h2>
-            <ul id="leaderboard-list">
-                </ul>
-            <button class="btn" id="btn-close-lb">Закрыть</button>
-        </div>
-    </div>
-</div>
+    <canvas id="gameCanvas"></canvas>
 
 <script type="module">
-    // 1. ИМПОРТЫ FIREBASE (используем CDN для браузера)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, set, get, update, child, orderByChild, limitToLast, query } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, set, get, update, child, query, orderByChild, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-    // 2. КОНФИГУРАЦИЯ FIREBASE
     const firebaseConfig = {
         apiKey: "AIzaSyCuXDgwCpLzJl_i6NIgwhA1nanVzTs7fnM",
         authDomain: "three-cats-online.firebaseapp.com",
         projectId: "three-cats-online",
         storageBucket: "three-cats-online.firebasestorage.app",
         messagingSenderId: "1965511705",
-        appId: "1:1965511705:web:86a405ef672ae7bfa18688",
-        measurementId: "G-MD1FZQEQC9"
+        appId: "1:1965511705:web:86a405ef672ae7bfa18688"
     };
+
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // 3. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
-    let userData = { nick: "", elo: 0, coins: 0 };
-    let gameState = 'menu'; // menu, playing
-    let gameMode = ''; // train, online
-    let currentFighter = 'Korzhik'; // Стартовый боец
-    let abilityCooldown = false;
-    
-    // Элементы DOM
+    // ДАННЫЕ ИГРОКА
+    let user = { nick: "", elo: 0, coins: 0, fighter: "Коржик" };
+    const fighters = [
+        { name: "Коржик", power: "Вода (Скольжение)" },
+        { name: "Сажик", power: "Туман (Отталкивание)" },
+        { name: "Гоня", power: "Фейерверк (Стан)" },
+        { name: "Карамелька", power: "Леденец (Липкость)" },
+        { name: "Шуруп", power: "Робот (Выстрел)" },
+        { name: "Изюм", power: "Краска (Замедление)" },
+        { name: "Горчица", power: "Хот-дог (Темнота)" },
+        { name: "Компот", power: "Кастрюля (Взрыв)" }
+    ];
+
+    // ИГРОВЫЕ ПЕРЕМЕННЫЕ
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    const mainMenu = document.getElementById('main-menu');
-    const gameUI = document.getElementById('game-ui');
-    const authModal = document.getElementById('auth-modal');
-    const leaderboardModal = document.getElementById('leaderboard-modal');
+    let state = 'AUTH'; 
+    let mode = 'train';
+    let score = { p: 0, o: 0 };
+    let abilityCD = false;
 
-    // Настройка Canvas под экран
-    function resizeCanvas() {
+    // ОБЪЕКТЫ
+    const puck = { x: 0, y: 0, vx: 0, vy: 0, r: 15 };
+    const p1 = { x: 0, y: 0, r: 35, stunned: 0, slow: 1 };
+    const p2 = { x: 0, y: 0, r: 35, stunned: 0, slow: 1 };
+
+    function initPositions() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
+        puck.x = canvas.width/2; puck.y = canvas.height/2;
+        puck.vx = 0; puck.vy = 0;
+        p1.x = canvas.width/2; p1.y = canvas.height - 100;
+        p2.x = canvas.width/2; p2.y = 100;
     }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
+    window.addEventListener('resize', initPositions);
+    initPositions();
 
-    // 4. БАЗА ДАННЫХ И АВТОРИЗАЦИЯ
-    async function login(nick) {
-        if (!nick) return;
-        const dbRef = ref(db);
-        try {
-            const snapshot = await get(child(dbRef, `users/${nick}`));
-            if (snapshot.exists()) {
-                userData = snapshot.val();
-            } else {
-                userData = { nick: nick, elo: 0, coins: 0 };
-                await set(ref(db, 'users/' + nick), userData);
-            }
-            authModal.style.display = 'none';
-            updateTopBar();
-            localStorage.setItem('cc2_nick', nick);
-        } catch (e) { console.error("Firebase Error:", e); alert("Ошибка подключения к БД"); }
-    }
-
-    function updateTopBar() {
-        document.getElementById('player-nick').innerText = userData.nick;
-        document.getElementById('player-coins').innerText = userData.coins;
-        document.getElementById('elo-display').innerText = userData.elo;
-    }
-
-    async function showLeaderboard() {
-        leaderboardModal.style.display = 'flex';
-        const lbList = document.getElementById('leaderboard-list');
-        lbList.innerHTML = '<li>Загрузка...</li>';
+    // AUTH ЛОГИКА
+    document.getElementById('btn-do-login').onclick = async () => {
+        const nick = document.getElementById('nick-in').value.trim();
+        if (!nick) return alert("Введите ник!");
         
-        try {
-            const topUsersRef = query(ref(db, 'users'), orderByChild('elo'), limitToLast(10));
-            const snapshot = await get(topUsersRef);
-            if (snapshot.exists()) {
-                let users = [];
-                snapshot.forEach(child => { users.push(child.val()); });
-                users.reverse(); // По убыванию
-                lbList.innerHTML = '';
-                users.forEach((u, i) => {
-                    lbList.innerHTML += `<li><span>${i+1}. ${u.nick}</span> <span>${u.elo} 🏆</span></li>`;
-                });
-            }
-        } catch (e) { lbList.innerHTML = '<li>Ошибка загрузки</li>'; }
-    }
-
-    // Проверка сохраненного логина
-    const savedNick = localStorage.getItem('cc2_nick');
-    if (savedNick) login(savedNick);
-    else authModal.style.display = 'flex';
-
-    document.getElementById('btn-login').onclick = () => login(document.getElementById('nick-input').value.trim());
-    document.getElementById('elo-display').onclick = showLeaderboard;
-    document.getElementById('btn-close-lb').onclick = () => leaderboardModal.style.display = 'none';
-
-    // 5. ИГРОВАЯ ФИЗИКА И СУЩНОСТИ
-    let score = { player: 0, opponent: 0 };
-    let winTarget = 3;
-
-    const puck = { x: canvas.width/2, y: canvas.height/2, vx: 0, vy: 0, radius: 15, mass: 1 };
-    const player = { x: canvas.width/2, y: canvas.height - 100, radius: 30, mass: 5, color: '#e94560', stunned: 0, speedMult: 1 };
-    const opponent = { x: canvas.width/2, y: 100, radius: 30, mass: 5, color: '#0f3460', stunned: 0, speedMult: 1, targetX: canvas.width/2 };
-
-    const goalWidth = canvas.width * 0.4;
-    
-    function resetPositions() {
-        puck.x = canvas.width/2; puck.y = canvas.height/2; puck.vx = 0; puck.vy = 0;
-        player.x = canvas.width/2; player.y = canvas.height - 100;
-        opponent.x = canvas.width/2; opponent.y = 100;
-    }
-
-    // Обработка касаний (Touch API)
-    canvas.addEventListener('touchstart', handleTouch, {passive: false});
-    canvas.addEventListener('touchmove', handleTouch, {passive: false});
-
-    function handleTouch(e) {
-        if (gameState !== 'playing') return;
-        e.preventDefault();
-        const touch = e.touches[0];
-        // Ограничиваем биту игрока его половиной поля (нижняя)
-        player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, touch.clientX));
-        player.y = Math.max(canvas.height/2 + player.radius, Math.min(canvas.height - player.radius, touch.clientY));
-    }
-
-    // 6. СПОСОБНОСТИ БОЙЦОВ
-    document.getElementById('ability-btn').onclick = activateAbility;
-
-    function activateAbility() {
-        if (abilityCooldown) return;
-        abilityCooldown = true;
-        document.getElementById('ability-btn').classList.add('cooldown');
-        
-        switch(currentFighter) {
-            case 'Korzhik': // Враг скользит/теряет трение
-                opponent.speedMult = 0.2;
-                setTimeout(() => opponent.speedMult = 1, 800);
-                break;
-            case 'Sazhik': // Отталкивает врага к стене
-                opponent.y = opponent.radius;
-                opponent.stunned = 30; // кадров оглушения
-                break;
-            case 'Gonya': // Оглушает врага
-                opponent.stunned = 60;
-                break;
-            case 'Karamelka': // Сильное замедление
-                opponent.speedMult = 0.1;
-                setTimeout(() => opponent.speedMult = 1, 1500);
-                break;
-            case 'Shurup': // Отброс + стан 0.5 сек (30 кадров)
-                opponent.y = opponent.radius;
-                opponent.stunned = 30;
-                break;
-            case 'Izyum': // Замедляет всё
-                opponent.speedMult = 0.5; puck.vx *= 0.5; puck.vy *= 0.5;
-                setTimeout(() => opponent.speedMult = 1, 2000);
-                break;
-            case 'Gorchitsa': // Темнеет экран (стан для ИИ)
-                document.getElementById('blind-overlay').style.opacity = 1;
-                opponent.stunned = 30;
-                setTimeout(() => document.getElementById('blind-overlay').style.opacity = 0, 500);
-                break;
-            case 'Kompot': // Отталкивает врага и шайбу
-                opponent.y = opponent.radius;
-                puck.vy = -20; // Сильный удар в сторону ворот врага
-                break;
-        }
-
-        setTimeout(() => {
-            abilityCooldown = false;
-            document.getElementById('ability-btn').classList.remove('cooldown');
-        }, 5000); // 5 сек кулдаун
-    }
-
-    // 7. ИГРОВОЙ ЦИКЛ (Physics & Render)
-    function resolveCollision(circle1, circle2) {
-        const dx = circle2.x - circle1.x;
-        const dy = circle2.y - circle1.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        if (distance < circle1.radius + circle2.radius) {
-            // Отталкивание шайбы от биты
-            const angle = Math.atan2(dy, dx);
-            const force = 5; 
-            if (circle2 === puck) {
-                puck.vx += Math.cos(angle) * force;
-                puck.vy += Math.sin(angle) * force;
-            }
-        }
-    }
-
-    function update() {
-        if (gameState !== 'playing') return;
-
-        // Физика шайбы
-        puck.x += puck.vx;
-        puck.y += puck.vy;
-        puck.vx *= 0.99; // Трение
-        puck.vy *= 0.99;
-
-        // Отскок шайбы от стен
-        if (puck.x - puck.radius < 0 || puck.x + puck.radius > canvas.width) puck.vx *= -1;
-        
-        // Логика ворот
-        if (puck.y - puck.radius < 0) {
-            if (puck.x > canvas.width/2 - goalWidth/2 && puck.x < canvas.width/2 + goalWidth/2) {
-                score.player++; checkWin(); resetPositions();
-            } else puck.vy *= -1;
-        }
-        if (puck.y + puck.radius > canvas.height) {
-            if (puck.x > canvas.width/2 - goalWidth/2 && puck.x < canvas.width/2 + goalWidth/2) {
-                score.opponent++; checkWin(); resetPositions();
-            } else puck.vy *= -1;
-        }
-
-        // Логика ИИ (Оппонента)
-        if (opponent.stunned > 0) {
-            opponent.stunned--;
+        const snapshot = await get(ref(db, `users/${nick}`));
+        if (snapshot.exists()) {
+            user = snapshot.val();
         } else {
-            // ИИ следит за шайбой, если она на его половине
-            if (puck.y < canvas.height / 2) {
-                opponent.targetX = puck.x;
-                const aiSpeed = (gameMode === 'train' ? 3 : 6) * opponent.speedMult;
-                if (opponent.x < opponent.targetX) opponent.x += aiSpeed;
-                if (opponent.x > opponent.targetX) opponent.x -= aiSpeed;
-                // Атака
-                if (Math.abs(opponent.x - puck.x) < 20 && opponent.y < puck.y) opponent.y += aiSpeed * 1.5;
+            user = { nick, elo: 0, coins: 0, fighter: "Коржик" };
+            await set(ref(db, `users/${nick}`), user);
+        }
+        localStorage.setItem('cc2_nick', nick);
+        showMenu();
+    };
+
+    function showMenu() {
+        state = 'MENU';
+        document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+        document.getElementById('screen-menu').classList.remove('hidden');
+        document.getElementById('ui-nick').innerText = user.nick;
+        document.getElementById('ui-coins').innerText = user.coins;
+        document.getElementById('elo-display').innerText = user.elo;
+        document.getElementById('ability-btn').classList.add('hidden');
+    }
+
+    // МАГАЗИН
+    window.showShop = () => {
+        document.getElementById('screen-shop').classList.remove('hidden');
+        const grid = document.getElementById('shop-grid');
+        grid.innerHTML = '';
+        fighters.forEach(f => {
+            const div = document.createElement('div');
+            div.className = `fighter-card ${user.fighter === f.name ? 'active' : ''}`;
+            div.innerHTML = `<b>${f.name}</b><br><small>${f.power}</small>`;
+            div.onclick = () => {
+                user.fighter = f.name;
+                update(ref(db, `users/${user.nick}`), { fighter: f.name });
+                showShop(); // Refresh
+            };
+            grid.appendChild(div);
+        });
+    };
+    window.hideShop = () => document.getElementById('screen-shop').classList.add('hidden');
+
+    // ЛОГИКА ИГРЫ
+    window.startGame = (m) => {
+        mode = m;
+        score = { p: 0, o: 0 };
+        state = 'PLAY';
+        initPositions();
+        document.getElementById('screen-menu').classList.add('hidden');
+        document.getElementById('ability-btn').classList.remove('hidden');
+        document.getElementById('score-view').innerText = "0 : 0";
+    };
+
+    // Управление
+    canvas.addEventListener('touchmove', (e) => {
+        if (state !== 'PLAY') return;
+        e.preventDefault();
+        const t = e.touches[0];
+        if (p1.stunned > 0) return;
+        p1.x = Math.max(p1.r, Math.min(canvas.width - p1.r, t.clientX));
+        p1.y = Math.max(canvas.height/2 + p1.r, Math.min(canvas.height - p1.r, t.clientY));
+    }, {passive: false});
+
+    // Способность
+    document.getElementById('ability-btn').onclick = () => {
+        if (abilityCD || state !== 'PLAY') return;
+        abilityCD = true;
+        const btn = document.getElementById('ability-btn');
+        btn.classList.add('cooldown');
+
+        // Эффект на врага
+        if (user.fighter === "Коржик") p2.slow = 0.3;
+        if (user.fighter === "Гоня") p2.stunned = 60;
+        if (user.fighter === "Горчица") { 
+            document.getElementById('blind-fx').style.opacity = 1;
+            setTimeout(() => document.getElementById('blind-fx').style.opacity = 0, 600);
+        }
+        if (user.fighter === "Компот") { puck.vy = -15; p2.y = 50; }
+
+        setTimeout(() => { p2.slow = 1; }, 1000);
+        setTimeout(() => { abilityCD = false; btn.classList.remove('cooldown'); }, 5000);
+    };
+
+    function updatePhysics() {
+        if (state !== 'PLAY') return;
+
+        puck.x += puck.vx; puck.y += puck.vy;
+        puck.vx *= 0.98; puck.vy *= 0.98;
+
+        // Стены
+        if (puck.x < puck.r || puck.x > canvas.width - puck.r) puck.vx *= -1;
+        
+        // Голы
+        const gw = canvas.width * 0.4;
+        if (puck.y < 0) {
+            if (puck.x > canvas.width/2 - gw/2 && puck.x < canvas.width/2 + gw/2) {
+                score.p++; resetRound();
+            } else { puck.vy *= -1; puck.y = puck.r; }
+        }
+        if (puck.y > canvas.height) {
+            if (puck.x > canvas.width/2 - gw/2 && puck.x < canvas.width/2 + gw/2) {
+                score.o++; resetRound();
+            } else { puck.vy *= -1; puck.y = canvas.height - puck.r; }
+        }
+
+        // Столкновения
+        checkColl(p1, puck);
+        checkColl(p2, puck);
+
+        // Бот
+        if (p2.stunned > 0) p2.stunned--;
+        else {
+            let speed = (mode === 'train' ? 4 : 7) * p2.slow;
+            if (puck.y < canvas.height/2) {
+                if (p2.x < puck.x) p2.x += speed;
+                if (p2.x > puck.x) p2.x -= speed;
+                if (p2.y < puck.y - 40) p2.y += 2;
             } else {
-                // Возврат в центр
-                opponent.y += (100 - opponent.y) * 0.1;
+                p2.y += (100 - p2.y) * 0.05;
             }
         }
-        // Ограничения ИИ
-        opponent.x = Math.max(opponent.radius, Math.min(canvas.width - opponent.radius, opponent.x));
-        opponent.y = Math.max(opponent.radius, Math.min(canvas.height/2 - opponent.radius, opponent.y));
+        
+        document.getElementById('score-view').innerText = `${score.o} : ${score.p}`;
+        if (score.p >= 3 || score.o >= 3) finishGame();
+    }
 
-        // Коллизии
-        resolveCollision(player, puck);
-        resolveCollision(opponent, puck);
+    function checkColl(p, pk) {
+        let dx = pk.x - p.x;
+        let dy = pk.y - p.y;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < p.r + pk.r) {
+            let ang = Math.atan2(dy, dx);
+            pk.vx = Math.cos(ang) * 10;
+            pk.vy = Math.sin(ang) * 10;
+        }
+    }
 
-        // Обновление UI
-        document.getElementById('score-player').innerText = score.player;
-        document.getElementById('score-opp').innerText = score.opponent;
+    function resetRound() {
+        puck.x = canvas.width/2; puck.y = canvas.height/2;
+        puck.vx = 0; puck.vy = 0;
+    }
+
+    async function finishGame() {
+        state = 'MENU';
+        const win = score.p >= 3;
+        if (mode === 'online') {
+            let eloGain = win ? 25 : -10;
+            user.elo = Math.max(0, user.elo + eloGain);
+            user.coins += win ? 10 : 0;
+            await update(ref(db, `users/${user.nick}`), { elo: user.elo, coins: user.coins });
+        }
+        alert(win ? "Победа!" : "Поражение");
+        showMenu();
     }
 
     function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Линия по центру
-        ctx.beginPath();
-        ctx.moveTo(0, canvas.height/2);
-        ctx.lineTo(canvas.width, canvas.height/2);
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = 4;
-        ctx.stroke();
+        ctx.clearRect(0,0, canvas.width, canvas.height);
+        if (state !== 'PLAY') { requestAnimationFrame(draw); return; }
 
-        // Ворота оппонента (верхние)
-        ctx.fillStyle = '#0f3460';
-        ctx.fillRect(canvas.width/2 - goalWidth/2, 0, goalWidth, 10);
-        
-        // Ворота игрока (нижние)
-        ctx.fillStyle = '#e94560';
-        ctx.fillRect(canvas.width/2 - goalWidth/2, canvas.height-10, goalWidth, 10);
+        // Поле
+        ctx.strokeStyle = "rgba(255,255,255,0.1)";
+        ctx.lineWidth = 5;
+        ctx.strokeRect(canvas.width/2 - (canvas.width*0.4)/2, 0, canvas.width*0.4, 10);
+        ctx.strokeRect(canvas.width/2 - (canvas.width*0.4)/2, canvas.height-10, canvas.width*0.4, 10);
 
         // Шайба
-        ctx.beginPath(); ctx.arc(puck.x, puck.y, puck.radius, 0, Math.PI*2);
-        ctx.fillStyle = '#fff'; ctx.fill(); ctx.closePath();
+        ctx.fillStyle = "white";
+        ctx.beginPath(); ctx.arc(puck.x, puck.y, puck.r, 0, Math.PI*2); ctx.fill();
 
-        // Игрок
-        ctx.beginPath(); ctx.arc(player.x, player.y, player.radius, 0, Math.PI*2);
-        ctx.fillStyle = player.color; ctx.fill();
-        ctx.lineWidth = 4; ctx.strokeStyle = '#fff'; ctx.stroke(); ctx.closePath();
+        // Игроки
+        ctx.fillStyle = "#e94560";
+        ctx.beginPath(); ctx.arc(p1.x, p1.y, p1.r, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "#0f3460";
+        ctx.beginPath(); ctx.arc(p2.x, p2.y, p2.r, 0, Math.PI*2); ctx.fill();
 
-        // Оппонент
-        ctx.beginPath(); ctx.arc(opponent.x, opponent.y, opponent.radius, 0, Math.PI*2);
-        ctx.fillStyle = opponent.color; ctx.fill();
-        if(opponent.stunned > 0) { ctx.strokeStyle = 'yellow'; } else { ctx.strokeStyle = '#fff'; }
-        ctx.lineWidth = 4; ctx.stroke(); ctx.closePath();
+        updatePhysics();
+        requestAnimationFrame(draw);
     }
 
-    function loop() {
-        update();
-        draw();
-        requestAnimationFrame(loop);
-    }
-    loop(); // Старт цикла
-
-    // 8. СИСТЕМА ELO И ЭКОНОМИКА
-    function calculateRewards(isWin) {
-        if (gameMode !== 'online') return; // В тренировке ничего не даем
-
-        // Монеты
-        if (isWin) userData.coins += 10;
-        else userData.coins = Math.max(0, userData.coins - 3);
-
-        // ELO логика по ТЗ
-        let eloChange = 0;
-        const elo = userData.elo;
-        
-        if (isWin) {
-            if (elo < 1000) eloChange = Math.floor(Math.random() * 91) + 10; // 10..100
-            else if (elo < 2000) eloChange = Math.floor(Math.random() * 46) + 5; // 5..50
-            else if (elo < 5000) eloChange = Math.floor(Math.random() * 36) + 5; // 5..40
-            else if (elo < 10000) eloChange = Math.floor(Math.random() * 31) + 5; // 5..35
-            else eloChange = 20; // 10000+
-        } else {
-            if (elo < 1000) eloChange = -(Math.floor(Math.random() * 3) + 5); // -5..-7
-            else if (elo < 2000) eloChange = -(Math.floor(Math.random() * 3) + 6); // -6..-8
-            else if (elo < 5000) eloChange = -(Math.floor(Math.random() * 2) + 6); // -6..-7
-            else if (elo < 10000) eloChange = -(Math.floor(Math.random() * 3) + 5); // -5..-7
-            else eloChange = -5; // 10000+
-        }
-
-        userData.elo = Math.max(0, userData.elo + eloChange);
-
-        // Сохранение в Firebase
-        update(ref(db, 'users/' + userData.nick), {
-            elo: userData.elo,
-            coins: userData.coins
-        });
-        updateTopBar();
-        
-        alert(isWin ? `ПОБЕДА!\nELO: +${eloChange}\nМонеты: +10` : `ПОРАЖЕНИЕ!\nELO: ${eloChange}\nМонеты: -3`);
+    // Авто-логин
+    const saved = localStorage.getItem('cc2_nick');
+    if (saved) {
+        document.getElementById('nick-in').value = saved;
+        // Можно автоматом жать логин
+    } else {
+        document.getElementById('screen-auth').classList.remove('hidden');
     }
 
-    function checkWin() {
-        if (score.player >= winTarget || score.opponent >= winTarget) {
-            gameState = 'menu';
-            gameUI.style.display = 'none';
-            mainMenu.style.display = 'flex';
-            
-            if (gameMode === 'train') {
-                alert(score.player >= winTarget ? "Тренировка пройдена!" : "Вы проиграли боту.");
-            } else {
-                calculateRewards(score.player >= winTarget);
-            }
-        }
-    }
-
-    // 9. УПРАВЛЕНИЕ МЕНЮ
-    function startGame(mode, target) {
-        gameMode = mode;
-        winTarget = target;
-        score = { player: 0, opponent: 0 };
-        resetPositions();
-        mainMenu.style.display = 'none';
-        gameUI.style.display = 'block';
-        gameState = 'playing';
-    }
-
-    document.getElementById('btn-train').onclick = () => startGame('train', 5);
-    document.getElementById('btn-online').onclick = () => startGame('online', 3);
-    
+    draw();
 </script>
 </body>
 </html>
