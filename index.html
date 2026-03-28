@@ -3,388 +3,457 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dark Hockey Pro</title>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+    <title>CC 2: Counter Cat</title>
     <style>
-        * { box-sizing: border-box; touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #0d1117; font-family: 'Oswald', sans-serif; color: white; }
+        /* CSS: Mobile First, отключение зума и скролла */
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body, html { width: 100vw; height: 100vh; background-color: #1a1a2e; overflow: hidden; touch-action: none; color: white; }
         
-        .screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; flex-direction: column; align-items: center; background: radial-gradient(circle, #1a2333 0%, #0d1117 100%); z-index: 10;}
-        .screen.active { display: flex; animation: fadeIn 0.2s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* Панель ресурсов */
-        .top-bar { position: absolute; top: 0; width: 100%; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.6); border-bottom: 2px solid #30363d; z-index: 100; }
-        .stat-item { display: flex; align-items: center; gap: 5px; font-weight: 700; font-size: 16px; background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.2); }
-        .icon-elo { color: #f1c40f; } .icon-coins { color: #f39c12; } .icon-gems { color: #9b59b6; }
-
-        /* Главные кнопки */
-        .main-nav { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: space-around; align-items: center; padding: 0 10px; z-index: 100; }
-        .btn { border: none; border-radius: 15px; font-family: 'Oswald'; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: 0.1s; box-shadow: 0 4px 0 rgba(0,0,0,0.4); }
-        .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,0.4); }
-
-        .btn-side { width: 100px; height: 60px; font-size: 14px; background: #34495e; color: white; }
-        .btn-play { width: 180px; height: 80px; font-size: 28px; background: linear-gradient(180deg, #f1c40f, #e67e22); color: #000; border: 3px solid #fff; }
-        .btn-shop { background: #9b59b6; } .btn-mode { background: #3498db; }
-
-        /* Магазин (Исправленный скролл) */
-        .shop-scroller { width: 100%; display: flex; overflow-x: auto; padding: 20px; gap: 20px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
-        .shop-item { flex: 0 0 180px; background: rgba(255,255,255,0.05); border: 3px solid #30363d; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; align-items: center; scroll-snap-align: center; }
-        .shop-item.selected { border-color: #f1c40f; background: rgba(241, 196, 15, 0.1); }
-        .skin-circle { width: 70px; height: 70px; border-radius: 50%; border: 4px solid #fff; margin-bottom: 10px; box-shadow: 0 0 15px rgba(255,255,255,0.2); }
-        .btn-buy { width: 100%; padding: 8px; margin-top: auto; background: #2ecc71; color: white; border-radius: 10px; font-size: 14px; }
-        .btn-buy.owned { background: #3498db; } .btn-buy.active-skin { background: #f1c40f; color: #000; }
-
-        /* Геймплей */
-        #gameCanvas { background: #1a1f26; display: block; width: 100%; height: 100%; }
-        #score-ui { position: absolute; top: 60px; width: 100%; text-align: center; font-size: 50px; font-weight: 900; pointer-events: none; z-index: 5; text-shadow: 2px 2px 0 #000; letter-spacing: 5px; }
+        /* UI Элементы */
+        #game-container { position: relative; width: 100%; height: 100%; }
+        canvas { display: block; width: 100%; height: 100%; }
         
-        /* Ежедневная награда */
-        .daily-box { margin-top: 80px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 20px; border: 1px dashed #555; text-align: center; width: 80%; }
+        /* Верхняя панель */
+        #top-bar { position: absolute; top: 0; width: 100%; padding: 10px; background: rgba(0,0,0,0.6); display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+        .user-info { display: flex; align-items: center; gap: 10px; }
+        .avatar { width: 40px; height: 40px; background: #e94560; border-radius: 50%; border: 2px solid #fff; }
+        .stats { display: flex; flex-direction: column; font-size: 14px; font-weight: bold; }
+        #elo-display { color: #f9a826; cursor: pointer; font-size: 16px; text-decoration: underline; }
+        
+        /* Главное меню */
+        #main-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a2e; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; }
+        .menu-title { font-size: 32px; color: #e94560; margin-bottom: 30px; font-weight: 900; text-shadow: 2px 2px #0f3460; }
+        .btn { width: 80%; padding: 15px; margin: 10px 0; background: #0f3460; color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 4px #0a2040; transition: 0.1s; }
+        .btn:active { transform: translateY(4px); box-shadow: 0 0 #0a2040; }
+        .btn-shop { background: #e94560; box-shadow: 0 4px #8a1c30; }
+        
+        /* Модальные окна (Авторизация, Лидерборд) */
+        .modal { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 30; }
+        .modal-content { background: #16213e; padding: 20px; border-radius: 15px; width: 90%; text-align: center; }
+        input[type="text"] { width: 100%; padding: 10px; margin: 15px 0; border-radius: 5px; border: none; font-size: 16px; text-align: center; }
+        
+        /* Таблица лидеров */
+        #leaderboard-list { list-style: none; margin: 15px 0; max-height: 250px; overflow-y: auto; text-align: left; }
+        #leaderboard-list li { padding: 8px; border-bottom: 1px solid #0f3460; display: flex; justify-content: space-between; }
+        
+        /* Игровой интерфейс */
+        #game-ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; z-index: 5; }
+        #score-board { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 48px; opacity: 0.3; font-weight: bold; pointer-events: none; }
+        
+        /* Кнопка способности */
+        #ability-btn { position: absolute; bottom: 30px; right: 30px; width: 80px; height: 80px; background: #e94560; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 0 15px #e94560; pointer-events: auto; display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: bold; opacity: 0.9; }
+        #ability-btn:active { transform: scale(0.95); opacity: 1; }
+        #ability-btn.cooldown { background: #555; box-shadow: none; pointer-events: none; }
+        
+        /* Затемнение экрана (способность Горчицы) */
+        #blind-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: black; opacity: 0; pointer-events: none; transition: opacity 0.1s; z-index: 6; }
     </style>
 </head>
 <body>
 
-    <div class="top-bar">
-        <div class="stat-item"><span class="icon-elo">⭐</span> <span id="ui-elo">0</span></div>
-        <div class="stat-item"><span class="icon-coins">🪙</span> <span id="ui-coins">0</span></div>
-        <div class="stat-item"><span class="icon-gems">💎</span> <span id="ui-gems">0</span></div>
-    </div>
-
-    <div id="screen-menu" class="screen active">
-        <h1 style="font-size: 70px; margin-top: 40px; text-shadow: 4px 4px #000;">HOCKEY</h1>
-        
-        <div class="daily-box">
-            <div id="daily-timer" style="font-size: 14px; color: #aaa;">ПРОВЕРКА...</div>
-            <button id="btn-daily" class="btn" style="background: #2ecc71; padding: 10px 20px; margin-top: 5px;" onclick="claimDaily()">ПОДАРОК 100 🪙</button>
-        </div>
-
-        <div class="main-nav">
-            <button class="btn btn-side btn-mode" onclick="showScreen('screen-modes')">РЕЖИМ:<br><span id="mode-label">ОНЛАЙН</span></button>
-            <button class="btn btn-play" onclick="startMatchmaking()">ИГРАТЬ</button>
-            <button class="btn btn-side btn-shop" onclick="showScreen('screen-shop')">МАГАЗИН</button>
-        </div>
-    </div>
-
-    <div id="screen-shop" class="screen">
-        <button class="btn" style="position: absolute; top: 70px; left: 20px; background: #555; padding: 5px 15px;" onclick="showScreen('screen-menu')">← НАЗАД</button>
-        <h2 style="margin-top: 100px; font-size: 32px; color: #9b59b6;">МАГАЗИН СКИНОВ</h2>
-        <div class="shop-scroller" id="shop-list">
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    <div id="blind-overlay"></div>
+    
+    <div id="top-bar">
+        <div class="user-info">
+            <div class="avatar"></div>
+            <div class="stats">
+                <span id="player-nick">Player</span>
+                <span>💰 <span id="player-coins">0</span></span>
             </div>
-        <p style="color: #666; font-size: 12px;">Листай вправо →</p>
+        </div>
+        <div class="stats" style="align-items: flex-end;">
+            <span>ELO</span>
+            <span id="elo-display">0</span>
+        </div>
     </div>
 
-    <div id="screen-modes" class="screen">
-        <button class="btn" style="position: absolute; top: 70px; left: 20px; background: #555; padding: 5px 15px;" onclick="showScreen('screen-menu')">← НАЗАД</button>
-        <h2 style="margin-top: 100px;">ВЫБЕРИ РЕЖИМ</h2>
-        <button class="btn" style="width: 80%; padding: 20px; margin: 10px; background: #3498db;" onclick="selectMode('ONLINE')">ОНЛАЙН (3 ГОЛА)</button>
-        <button class="btn" style="width: 80%; padding: 20px; margin: 10px; background: #e74c3c;" onclick="selectMode('BOTS')">БОТЫ (3 ГОЛА)</button>
-        <button class="btn" style="width: 80%; padding: 20px; margin: 10px; background: #2ecc71;" onclick="selectMode('TRAINING')">ТРЕНИРОВКА (5 ГОЛОВ)</button>
+    <div id="game-ui">
+        <div id="score-board"><span id="score-opp">0</span> : <span id="score-player">0</span></div>
+        <div id="ability-btn">⚡</div>
     </div>
 
-    <div id="screen-matchmaking" class="screen" style="justify-content: center;">
-        <div style="font-size: 30px; margin-bottom: 20px;">ПОИСК ИГРОКА...</div>
-        <div id="search-timer">0с</div>
-        <button class="btn btn-side" style="margin-top: 40px; background: #e74c3c;" onclick="cancelSearch()">ОТМЕНА</button>
+    <div id="main-menu">
+        <div class="menu-title">CC 2</div>
+        <button class="btn" id="btn-train">Тренировка</button>
+        <button class="btn" id="btn-online">Онлайн (1 на 1)</button>
+        <button class="btn" id="btn-duo">Дуо (2 на 2) [В разработке]</button>
+        <div style="display: flex; width: 80%; gap: 10px; margin-top: 20px;">
+            <button class="btn btn-shop" style="flex: 1;" id="btn-shop">Магазин</button>
+            <button class="btn" style="flex: 1;">⚙️ RU</button>
+        </div>
     </div>
 
-    <div id="screen-game" class="screen" style="padding: 0;">
-        <div id="score-ui">0 - 0</div>
-        <canvas id="gameCanvas"></canvas>
+    <div id="auth-modal" class="modal">
+        <div class="modal-content">
+            <h2>Добро пожаловать в CC 2</h2>
+            <input type="text" id="nick-input" placeholder="Введите никнейм..." maxlength="12">
+            <button class="btn" id="btn-login">Играть</button>
+        </div>
     </div>
 
-<script>
-    // --- ДАННЫЕ ---
-    let player = {
-        elo: parseInt(localStorage.getItem('h_elo')) || 0,
-        coins: parseInt(localStorage.getItem('h_coins')) || 0,
-        gems: parseInt(localStorage.getItem('h_gems')) || 0,
-        mode: 'ONLINE',
-        lastDaily: parseInt(localStorage.getItem('h_daily')) || 0,
-        ownedSkins: JSON.parse(localStorage.getItem('h_skins')) || ['default'],
-        activeSkin: localStorage.getItem('h_active') || 'default'
+    <div id="leaderboard-modal" class="modal">
+        <div class="modal-content">
+            <h2>Топ Игроков</h2>
+            <ul id="leaderboard-list">
+                </ul>
+            <button class="btn" id="btn-close-lb">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    // 1. ИМПОРТЫ FIREBASE (используем CDN для браузера)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, set, get, update, child, orderByChild, limitToLast, query } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // 2. КОНФИГУРАЦИЯ FIREBASE
+    const firebaseConfig = {
+        apiKey: "AIzaSyCuXDgwCpLzJl_i6NIgwhA1nanVzTs7fnM",
+        authDomain: "three-cats-online.firebaseapp.com",
+        projectId: "three-cats-online",
+        storageBucket: "three-cats-online.firebasestorage.app",
+        messagingSenderId: "1965511705",
+        appId: "1:1965511705:web:86a405ef672ae7bfa18688",
+        measurementId: "G-MD1FZQEQC9"
     };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-    const skins = {
-        'default': { name: 'КЛАССИК', price: 0, color: '#e74c3c' },
-        'neon': { name: 'НЕОН', price: 1500, color: '#2ecc71' },
-        'ice': { name: 'ЛЕД', price: 3000, color: '#3498db' },
-        'gold': { name: 'ЗОЛОТО', price: 7000, color: '#f1c40f' },
-        'dark': { name: 'ТЬМА', price: 15000, color: '#9b59b6' }
-    };
+    // 3. ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+    let userData = { nick: "", elo: 0, coins: 0 };
+    let gameState = 'menu'; // menu, playing
+    let gameMode = ''; // train, online
+    let currentFighter = 'Korzhik'; // Стартовый боец
+    let abilityCooldown = false;
+    
+    // Элементы DOM
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const mainMenu = document.getElementById('main-menu');
+    const gameUI = document.getElementById('game-ui');
+    const authModal = document.getElementById('auth-modal');
+    const leaderboardModal = document.getElementById('leaderboard-modal');
 
-    function save() {
-        localStorage.setItem('h_elo', player.elo);
-        localStorage.setItem('h_coins', player.coins);
-        localStorage.setItem('h_gems', player.gems);
-        localStorage.setItem('h_daily', player.lastDaily);
-        localStorage.setItem('h_skins', JSON.stringify(player.ownedSkins));
-        localStorage.setItem('h_active', player.activeSkin);
-        updateUI();
+    // Настройка Canvas под экран
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // 4. БАЗА ДАННЫХ И АВТОРИЗАЦИЯ
+    async function login(nick) {
+        if (!nick) return;
+        const dbRef = ref(db);
+        try {
+            const snapshot = await get(child(dbRef, `users/${nick}`));
+            if (snapshot.exists()) {
+                userData = snapshot.val();
+            } else {
+                userData = { nick: nick, elo: 0, coins: 0 };
+                await set(ref(db, 'users/' + nick), userData);
+            }
+            authModal.style.display = 'none';
+            updateTopBar();
+            localStorage.setItem('cc2_nick', nick);
+        } catch (e) { console.error("Firebase Error:", e); alert("Ошибка подключения к БД"); }
     }
 
-    function updateUI() {
-        document.getElementById('ui-elo').innerText = player.elo;
-        document.getElementById('ui-coins').innerText = player.coins;
-        document.getElementById('ui-gems').innerText = player.gems;
-        document.getElementById('mode-label').innerText = player.mode === 'ONLINE' ? 'ОНЛАЙН' : (player.mode === 'BOTS' ? 'БОТЫ' : 'ТРЕНИРОВКА');
+    function updateTopBar() {
+        document.getElementById('player-nick').innerText = userData.nick;
+        document.getElementById('player-coins').innerText = userData.coins;
+        document.getElementById('elo-display').innerText = userData.elo;
     }
 
-    // --- МАГАЗИН ---
-    function renderShop() {
-        const list = document.getElementById('shop-list');
-        list.innerHTML = '';
-        Object.keys(skins).forEach(id => {
-            const s = skins[id];
-            const isOwned = player.ownedSkins.includes(id);
-            const isActive = player.activeSkin === id;
-            
-            const item = document.createElement('div');
-            item.className = `shop-item ${isActive ? 'selected' : ''}`;
-            item.innerHTML = `
-                <div class="skin-circle" style="background: ${s.color}"></div>
-                <div style="font-weight: bold; margin-bottom: 5px;">${s.name}</div>
-                <div style="font-size: 14px; color: #f39c12; margin-bottom: 10px;">${isOwned ? 'КУПЛЕНО' : '🪙 ' + s.price}</div>
-                <button class="btn btn-buy ${isOwned ? (isActive ? 'active-skin' : 'owned') : ''}" 
-                        onclick="${isOwned ? `equip('${id}')` : `buy('${id}')`}">
-                    ${isActive ? 'ВЫБРАНО' : (isOwned ? 'ВЫБРАТЬ' : 'КУПИТЬ')}
-                </button>
-            `;
-            list.appendChild(item);
-        });
+    async function showLeaderboard() {
+        leaderboardModal.style.display = 'flex';
+        const lbList = document.getElementById('leaderboard-list');
+        lbList.innerHTML = '<li>Загрузка...</li>';
+        
+        try {
+            const topUsersRef = query(ref(db, 'users'), orderByChild('elo'), limitToLast(10));
+            const snapshot = await get(topUsersRef);
+            if (snapshot.exists()) {
+                let users = [];
+                snapshot.forEach(child => { users.push(child.val()); });
+                users.reverse(); // По убыванию
+                lbList.innerHTML = '';
+                users.forEach((u, i) => {
+                    lbList.innerHTML += `<li><span>${i+1}. ${u.nick}</span> <span>${u.elo} 🏆</span></li>`;
+                });
+            }
+        } catch (e) { lbList.innerHTML = '<li>Ошибка загрузки</li>'; }
     }
 
-    function buy(id) {
-        if (player.coins >= skins[id].price) {
-            player.coins -= skins[id].price;
-            player.ownedSkins.push(id);
-            save(); renderShop();
-        } else alert("Недостаточно монет!");
-    }
-    function equip(id) { player.activeSkin = id; save(); renderShop(); }
+    // Проверка сохраненного логина
+    const savedNick = localStorage.getItem('cc2_nick');
+    if (savedNick) login(savedNick);
+    else authModal.style.display = 'flex';
 
-    // --- ЕЖЕДНЕВКА ---
-    function checkDaily() {
-        const now = Date.now();
-        const diff = now - player.lastDaily;
-        const btn = document.getElementById('btn-daily');
-        if (diff < 86400000) {
-            btn.style.opacity = '0.5';
-            btn.disabled = true;
-            document.getElementById('daily-timer').innerText = "ЗАВТРА БУДЕТ НОВЫЙ";
-        } else {
-            btn.style.opacity = '1';
-            btn.disabled = false;
-            document.getElementById('daily-timer').innerText = "ПОДАРОК ГОТОВ!";
+    document.getElementById('btn-login').onclick = () => login(document.getElementById('nick-input').value.trim());
+    document.getElementById('elo-display').onclick = showLeaderboard;
+    document.getElementById('btn-close-lb').onclick = () => leaderboardModal.style.display = 'none';
+
+    // 5. ИГРОВАЯ ФИЗИКА И СУЩНОСТИ
+    let score = { player: 0, opponent: 0 };
+    let winTarget = 3;
+
+    const puck = { x: canvas.width/2, y: canvas.height/2, vx: 0, vy: 0, radius: 15, mass: 1 };
+    const player = { x: canvas.width/2, y: canvas.height - 100, radius: 30, mass: 5, color: '#e94560', stunned: 0, speedMult: 1 };
+    const opponent = { x: canvas.width/2, y: 100, radius: 30, mass: 5, color: '#0f3460', stunned: 0, speedMult: 1, targetX: canvas.width/2 };
+
+    const goalWidth = canvas.width * 0.4;
+    
+    function resetPositions() {
+        puck.x = canvas.width/2; puck.y = canvas.height/2; puck.vx = 0; puck.vy = 0;
+        player.x = canvas.width/2; player.y = canvas.height - 100;
+        opponent.x = canvas.width/2; opponent.y = 100;
+    }
+
+    // Обработка касаний (Touch API)
+    canvas.addEventListener('touchstart', handleTouch, {passive: false});
+    canvas.addEventListener('touchmove', handleTouch, {passive: false});
+
+    function handleTouch(e) {
+        if (gameState !== 'playing') return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        // Ограничиваем биту игрока его половиной поля (нижняя)
+        player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, touch.clientX));
+        player.y = Math.max(canvas.height/2 + player.radius, Math.min(canvas.height - player.radius, touch.clientY));
+    }
+
+    // 6. СПОСОБНОСТИ БОЙЦОВ
+    document.getElementById('ability-btn').onclick = activateAbility;
+
+    function activateAbility() {
+        if (abilityCooldown) return;
+        abilityCooldown = true;
+        document.getElementById('ability-btn').classList.add('cooldown');
+        
+        switch(currentFighter) {
+            case 'Korzhik': // Враг скользит/теряет трение
+                opponent.speedMult = 0.2;
+                setTimeout(() => opponent.speedMult = 1, 800);
+                break;
+            case 'Sazhik': // Отталкивает врага к стене
+                opponent.y = opponent.radius;
+                opponent.stunned = 30; // кадров оглушения
+                break;
+            case 'Gonya': // Оглушает врага
+                opponent.stunned = 60;
+                break;
+            case 'Karamelka': // Сильное замедление
+                opponent.speedMult = 0.1;
+                setTimeout(() => opponent.speedMult = 1, 1500);
+                break;
+            case 'Shurup': // Отброс + стан 0.5 сек (30 кадров)
+                opponent.y = opponent.radius;
+                opponent.stunned = 30;
+                break;
+            case 'Izyum': // Замедляет всё
+                opponent.speedMult = 0.5; puck.vx *= 0.5; puck.vy *= 0.5;
+                setTimeout(() => opponent.speedMult = 1, 2000);
+                break;
+            case 'Gorchitsa': // Темнеет экран (стан для ИИ)
+                document.getElementById('blind-overlay').style.opacity = 1;
+                opponent.stunned = 30;
+                setTimeout(() => document.getElementById('blind-overlay').style.opacity = 0, 500);
+                break;
+            case 'Kompot': // Отталкивает врага и шайбу
+                opponent.y = opponent.radius;
+                puck.vy = -20; // Сильный удар в сторону ворот врага
+                break;
+        }
+
+        setTimeout(() => {
+            abilityCooldown = false;
+            document.getElementById('ability-btn').classList.remove('cooldown');
+        }, 5000); // 5 сек кулдаун
+    }
+
+    // 7. ИГРОВОЙ ЦИКЛ (Physics & Render)
+    function resolveCollision(circle1, circle2) {
+        const dx = circle2.x - circle1.x;
+        const dy = circle2.y - circle1.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < circle1.radius + circle2.radius) {
+            // Отталкивание шайбы от биты
+            const angle = Math.atan2(dy, dx);
+            const force = 5; 
+            if (circle2 === puck) {
+                puck.vx += Math.cos(angle) * force;
+                puck.vy += Math.sin(angle) * force;
+            }
         }
     }
 
-    function claimDaily() {
-        player.coins += 100;
-        player.lastDaily = Date.now();
-        save(); checkDaily();
-        alert("Получено 100 монет!");
-    }
-
-    // --- НАВИГАЦИЯ ---
-    function showScreen(id) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        if(id === 'screen-shop') renderShop();
-        if(id === 'screen-menu') checkDaily();
-    }
-
-    function selectMode(m) { player.mode = m; save(); showScreen('screen-menu'); }
-
-    let searchInt;
-    function startMatchmaking() {
-        showScreen('screen-matchmaking');
-        let sec = 0;
-        searchInt = setInterval(() => {
-            sec++;
-            document.getElementById('search-timer').innerText = sec + "с";
-            if (sec >= (player.mode === 'ONLINE' ? 3 : 1)) {
-                clearInterval(searchInt);
-                initGame();
-            }
-        }, 1000);
-    }
-    function cancelSearch() { clearInterval(searchInt); showScreen('screen-menu'); }
-
-    // --- ИГРА ---
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    let gameActive = false;
-    let cw, ch;
-    let score = [0, 0];
-
-    let puck = { x: 0, y: 0, vx: 0, vy: 0, r: 15 };
-    let p1 = { x: 0, y: 0, r: 35, vx: 0, vy: 0, lastX: 0, lastY: 0 }; // Игрок
-    let bot = { x: 0, y: 0, r: 35, speed: 0 }; // Бот
-
-    function initGame() {
-        cw = canvas.width = window.innerWidth;
-        ch = canvas.height = window.innerHeight;
-        score = [0, 0];
-        resetPuck();
-        showScreen('screen-game');
-        gameActive = true;
-        // Сложность бота зависит от ELO
-        bot.speed = 3 + (player.elo / 1500); 
-        if (bot.speed > 8) bot.speed = 8; // Макс скорость чтобы не был "читерским"
-        requestAnimationFrame(update);
-    }
-
-    function resetPuck() {
-        puck.x = cw / 2; puck.y = ch / 2;
-        puck.vx = 0; puck.vy = 0;
-        p1.x = cw / 2; p1.y = ch - 100;
-        bot.x = cw / 2; bot.y = 100;
-    }
-
-    canvas.addEventListener('touchmove', e => {
-        if (!gameActive) return;
-        const t = e.touches[0];
-        // Игрок может двигаться только на своей половине
-        p1.x = t.clientX;
-        p1.y = Math.max(ch / 2 + p1.r, Math.min(ch - p1.r, t.clientY));
-        
-        // Считаем скорость свайпа для силы удара
-        p1.vx = p1.x - p1.lastX;
-        p1.vy = p1.y - p1.lastY;
-        p1.lastX = p1.x;
-        p1.lastY = p1.y;
-    });
-
     function update() {
-        if (!gameActive) return;
+        if (gameState !== 'playing') return;
 
         // Физика шайбы
         puck.x += puck.vx;
         puck.y += puck.vy;
-        puck.vx *= 0.985; puck.vy *= 0.985; // Трение
+        puck.vx *= 0.99; // Трение
+        puck.vy *= 0.99;
 
-        // Стены
-        if (puck.x < puck.r || puck.x > cw - puck.r) {
-            puck.vx *= -0.7;
-            puck.x = puck.x < puck.r ? puck.r : cw - puck.r;
+        // Отскок шайбы от стен
+        if (puck.x - puck.radius < 0 || puck.x + puck.radius > canvas.width) puck.vx *= -1;
+        
+        // Логика ворот
+        if (puck.y - puck.radius < 0) {
+            if (puck.x > canvas.width/2 - goalWidth/2 && puck.x < canvas.width/2 + goalWidth/2) {
+                score.player++; checkWin(); resetPositions();
+            } else puck.vy *= -1;
+        }
+        if (puck.y + puck.radius > canvas.height) {
+            if (puck.x > canvas.width/2 - goalWidth/2 && puck.x < canvas.width/2 + goalWidth/2) {
+                score.opponent++; checkWin(); resetPositions();
+            } else puck.vy *= -1;
         }
 
-        // БОТ: плавное движение, без телепортации
-        let targetX = puck.x;
-        // Если шайба на стороне бота, он атакует
-        if (puck.y < ch / 2) {
-            let dx = targetX - bot.x;
-            bot.x += Math.sign(dx) * Math.min(Math.abs(dx), bot.speed);
-            
-            let dy = (puck.y - 50) - bot.y;
-            bot.y += Math.sign(dy) * Math.min(Math.abs(dy), bot.speed);
+        // Логика ИИ (Оппонента)
+        if (opponent.stunned > 0) {
+            opponent.stunned--;
         } else {
-            // Возврат к воротам
-            let dx = (cw / 2) - bot.x;
-            bot.x += Math.sign(dx) * Math.min(Math.abs(dx), bot.speed * 0.5);
-            bot.y += (100 - bot.y) * 0.1;
-        }
-
-        // Столкновения (Игрок)
-        handleCol(p1, true);
-        handleCol(bot, false);
-
-        // Голы
-        if (puck.y < 0 || puck.y > ch) {
-            const goalArea = (puck.x > cw/2 - 70 && puck.x < cw/2 + 70);
-            if (goalArea) {
-                if (puck.y < 0) score[0]++; else score[1]++;
-                document.getElementById('score-ui').innerText = `${score[1]} - ${score[0]}`;
-                
-                let limit = player.mode === 'TRAINING' ? 5 : 3;
-                if (score[0] >= limit || score[1] >= limit) {
-                    endGame(score[0] > score[1]);
-                    return;
-                }
-                resetPuck();
+            // ИИ следит за шайбой, если она на его половине
+            if (puck.y < canvas.height / 2) {
+                opponent.targetX = puck.x;
+                const aiSpeed = (gameMode === 'train' ? 3 : 6) * opponent.speedMult;
+                if (opponent.x < opponent.targetX) opponent.x += aiSpeed;
+                if (opponent.x > opponent.targetX) opponent.x -= aiSpeed;
+                // Атака
+                if (Math.abs(opponent.x - puck.x) < 20 && opponent.y < puck.y) opponent.y += aiSpeed * 1.5;
             } else {
-                puck.vy *= -0.8;
-                puck.y = puck.y < 0 ? puck.r : ch - puck.r;
+                // Возврат в центр
+                opponent.y += (100 - opponent.y) * 0.1;
             }
         }
+        // Ограничения ИИ
+        opponent.x = Math.max(opponent.radius, Math.min(canvas.width - opponent.radius, opponent.x));
+        opponent.y = Math.max(opponent.radius, Math.min(canvas.height/2 - opponent.radius, opponent.y));
 
-        draw();
-        requestAnimationFrame(update);
-    }
+        // Коллизии
+        resolveCollision(player, puck);
+        resolveCollision(opponent, puck);
 
-    function handleCol(m, isPlayer) {
-        let dx = puck.x - m.x;
-        let dy = puck.y - m.y;
-        let dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist < puck.r + m.r) {
-            let angle = Math.atan2(dy, dx);
-            // Сила удара: база + скорость движения руки
-            let force = isPlayer ? (8 + Math.sqrt(m.vx**2 + m.vy**2) * 0.5) : 10;
-            if (force > 25) force = 25; // Ограничение силы
-            
-            puck.vx = Math.cos(angle) * force;
-            puck.vy = Math.sin(angle) * force;
-            
-            // Выталкивание
-            puck.x = m.x + Math.cos(angle) * (puck.r + m.r);
-            puck.y = m.y + Math.sin(angle) * (puck.r + m.r);
-        }
+        // Обновление UI
+        document.getElementById('score-player').innerText = score.player;
+        document.getElementById('score-opp').innerText = score.opponent;
     }
 
     function draw() {
-        ctx.clearRect(0, 0, cw, ch);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // Разметка поля
-        ctx.strokeStyle = "rgba(255,255,255,0.1)"; ctx.lineWidth = 5;
-        ctx.beginPath(); ctx.moveTo(0, ch/2); ctx.lineTo(cw, ch/2); ctx.stroke();
-        ctx.beginPath(); ctx.arc(cw/2, ch/2, 60, 0, Math.PI*2); ctx.stroke();
+        // Линия по центру
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height/2);
+        ctx.lineTo(canvas.width, canvas.height/2);
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        // Ворота оппонента (верхние)
+        ctx.fillStyle = '#0f3460';
+        ctx.fillRect(canvas.width/2 - goalWidth/2, 0, goalWidth, 10);
         
-        // Ворота
-        ctx.fillStyle = "#3498db"; ctx.fillRect(cw/2 - 70, 0, 140, 10);
-        ctx.fillStyle = "#e74c3c"; ctx.fillRect(cw/2 - 70, ch-10, 140, 10);
-
-        // Бот
-        ctx.fillStyle = "#3498db"; ctx.beginPath();
-        ctx.arc(bot.x, bot.y, bot.r, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = "white"; ctx.stroke();
-
-        // Игрок
-        ctx.fillStyle = skins[player.activeSkin].color; ctx.beginPath();
-        ctx.arc(p1.x, p1.y, p1.r, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = "white"; ctx.stroke();
+        // Ворота игрока (нижние)
+        ctx.fillStyle = '#e94560';
+        ctx.fillRect(canvas.width/2 - goalWidth/2, canvas.height-10, goalWidth, 10);
 
         // Шайба
-        ctx.fillStyle = "white"; ctx.shadowBlur = 10; ctx.shadowColor = "white";
-        ctx.beginPath(); ctx.arc(puck.x, puck.y, puck.r, 0, Math.PI*2); ctx.fill();
-        ctx.shadowBlur = 0;
+        ctx.beginPath(); ctx.arc(puck.x, puck.y, puck.radius, 0, Math.PI*2);
+        ctx.fillStyle = '#fff'; ctx.fill(); ctx.closePath();
+
+        // Игрок
+        ctx.beginPath(); ctx.arc(player.x, player.y, player.radius, 0, Math.PI*2);
+        ctx.fillStyle = player.color; ctx.fill();
+        ctx.lineWidth = 4; ctx.strokeStyle = '#fff'; ctx.stroke(); ctx.closePath();
+
+        // Оппонент
+        ctx.beginPath(); ctx.arc(opponent.x, opponent.y, opponent.radius, 0, Math.PI*2);
+        ctx.fillStyle = opponent.color; ctx.fill();
+        if(opponent.stunned > 0) { ctx.strokeStyle = 'yellow'; } else { ctx.strokeStyle = '#fff'; }
+        ctx.lineWidth = 4; ctx.stroke(); ctx.closePath();
     }
 
-    function endGame(win) {
-        gameActive = false;
-        if (player.mode !== 'TRAINING') {
-            if (win) {
-                // Твоя формула ELO
-                let gain = 0;
-                if(player.elo < 1000) gain = 25;
-                else if(player.elo < 1500) gain = 15;
-                else if(player.elo < 3000) gain = 10;
-                else gain = 5;
-                
-                player.elo += gain;
-                player.coins += 100;
-                player.gems += 1;
-                alert(`ПОБЕДА! +${gain} ELO`);
+    function loop() {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+    }
+    loop(); // Старт цикла
+
+    // 8. СИСТЕМА ELO И ЭКОНОМИКА
+    function calculateRewards(isWin) {
+        if (gameMode !== 'online') return; // В тренировке ничего не даем
+
+        // Монеты
+        if (isWin) userData.coins += 10;
+        else userData.coins = Math.max(0, userData.coins - 3);
+
+        // ELO логика по ТЗ
+        let eloChange = 0;
+        const elo = userData.elo;
+        
+        if (isWin) {
+            if (elo < 1000) eloChange = Math.floor(Math.random() * 91) + 10; // 10..100
+            else if (elo < 2000) eloChange = Math.floor(Math.random() * 46) + 5; // 5..50
+            else if (elo < 5000) eloChange = Math.floor(Math.random() * 36) + 5; // 5..40
+            else if (elo < 10000) eloChange = Math.floor(Math.random() * 31) + 5; // 5..35
+            else eloChange = 20; // 10000+
+        } else {
+            if (elo < 1000) eloChange = -(Math.floor(Math.random() * 3) + 5); // -5..-7
+            else if (elo < 2000) eloChange = -(Math.floor(Math.random() * 3) + 6); // -6..-8
+            else if (elo < 5000) eloChange = -(Math.floor(Math.random() * 2) + 6); // -6..-7
+            else if (elo < 10000) eloChange = -(Math.floor(Math.random() * 3) + 5); // -5..-7
+            else eloChange = -5; // 10000+
+        }
+
+        userData.elo = Math.max(0, userData.elo + eloChange);
+
+        // Сохранение в Firebase
+        update(ref(db, 'users/' + userData.nick), {
+            elo: userData.elo,
+            coins: userData.coins
+        });
+        updateTopBar();
+        
+        alert(isWin ? `ПОБЕДА!\nELO: +${eloChange}\nМонеты: +10` : `ПОРАЖЕНИЕ!\nELO: ${eloChange}\nМонеты: -3`);
+    }
+
+    function checkWin() {
+        if (score.player >= winTarget || score.opponent >= winTarget) {
+            gameState = 'menu';
+            gameUI.style.display = 'none';
+            mainMenu.style.display = 'flex';
+            
+            if (gameMode === 'train') {
+                alert(score.player >= winTarget ? "Тренировка пройдена!" : "Вы проиграли боту.");
             } else {
-                alert("ПОРАЖЕНИЕ!");
+                calculateRewards(score.player >= winTarget);
             }
-        } else alert("ТРЕНИРОВКА ОКОНЧЕНА");
-        save();
-        showScreen('screen-menu');
+        }
     }
 
-    updateUI();
-    checkDaily();
+    // 9. УПРАВЛЕНИЕ МЕНЮ
+    function startGame(mode, target) {
+        gameMode = mode;
+        winTarget = target;
+        score = { player: 0, opponent: 0 };
+        resetPositions();
+        mainMenu.style.display = 'none';
+        gameUI.style.display = 'block';
+        gameState = 'playing';
+    }
+
+    document.getElementById('btn-train').onclick = () => startGame('train', 5);
+    document.getElementById('btn-online').onclick = () => startGame('online', 3);
+    
 </script>
 </body>
 </html>
